@@ -54,3 +54,23 @@ $$;
 
 revoke all on function public.send_keepalive_ping(text, text) from public;
 grant execute on function public.send_keepalive_ping(text, text) to anon, authenticated, service_role;
+
+create extension if not exists pg_cron with schema pg_catalog;
+
+do $$
+begin
+  if exists (
+    select 1
+    from cron.job
+    where jobname = 'app_keepalive_daily_ping'
+  ) then
+    perform cron.unschedule('app_keepalive_daily_ping');
+  end if;
+end;
+$$;
+
+select cron.schedule(
+  'app_keepalive_daily_ping',
+  '0 0 * * *',
+  $$select public.send_keepalive_ping('hi', 'pg-cron');$$
+);
