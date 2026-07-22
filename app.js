@@ -29,7 +29,7 @@ const tables = [
       { name: "phone", label: "Phone", type: "tel" },
       { name: "venture", label: "Venture", type: "text" },
       { name: "type", label: "Type", type: "select", options: ["Founder", "Investor", "Partner", "Client", "Vendor", "Consultant", "Contractor", "Employee"], required: true },
-      { name: "role_title", label: "Role title", type: "select", options: ["Managing Director", "Project Manager", "Site Engineer", "Architect", "Client SPOC", "Finance Head", "Vendor Coordinator", "Legal Consultant"] },
+      { name: "role_title", label: "Role title", type: "select", options: ["Managing Director", "Project Manager", "Site Engineer", "Architect", "Client SPOC", "Finance Head", "Vendor Coordinator", "Legal Consultant", "Others"] },
       { name: "status", label: "Status", type: "select", options: ["Active", "Inactive"], value: "Active" },
       { name: "access_level", label: "Access level", type: "select", options: ["Founder", "Partner", "Employee", "Client", "Contractor"] },
     ],
@@ -44,7 +44,7 @@ const tables = [
       { name: "name", label: "Name", type: "text", required: true },
       { name: "venture", label: "Venture", type: "text" },
       { name: "vertical", label: "Vertical", type: "text" },
-      { name: "type", label: "Type", type: "select", options: ["Development", "Marketing", "Acquisition", "Leasing", "Infra", "CapitalRaise", "Logistics", "Internal"] },
+      { name: "type", label: "Type", type: "select", options: ["Development", "Marketing", "Acquisition", "Leasing", "Infra", "CapitalRaise", "Logistics", "Internal", "Others"] },
       { name: "asset", label: "Asset", type: "text" },
       { name: "stage", label: "Stage", type: "select", options: ["Origination", "Scoping", "Mandate", "Execution", "Delivery", "Closure"] },
       { name: "status", label: "Status", type: "select", options: ["Prospect", "Active", "On-Hold", "Blocked", "Completed", "Cancelled"] },
@@ -63,7 +63,7 @@ const tables = [
     fields: [
       { name: "title", label: "Title", type: "text", required: true },
       { name: "venture", label: "Venture", type: "text", required: true },
-      { name: "project", label: "Project", type: "text", required: true },
+      { name: "project", label: "Project", type: "text" },
       { name: "parent_task", label: "Parent task", type: "text" },
       { name: "status", label: "Status", type: "select", options: ["Backlog", "To-Do", "In-Progress", "In-Review", "Blocked", "Done"] },
       { name: "priority", label: "Priority", type: "select", options: ["Low", "Medium", "High", "Critical"] },
@@ -1670,6 +1670,11 @@ const leafletRuntime = {
 
 const arrayFields = new Set(["verticals", "tags"]);
 const hierarchyAttachmentTables = new Set(["tasks", "documents", "assets", "events", "transactions"]);
+const dateFieldsWithoutCreateDefault = new Set([
+  "projects.target_date",
+  "tasks.due_date",
+  "transactions.due_date",
+]);
 
 const relationFields = {
   venture: { table: "ventures", labelField: "name" },
@@ -1846,7 +1851,20 @@ function mergeFormConfig(config = {}) {
     const overrideTable = overrideTables.get(table.key) ?? {};
     const overrideFields = new Map((Array.isArray(overrideTable.fields) ? overrideTable.fields : []).map((field) => [field.name, field]));
     const defaultFieldNames = new Set(table.fields.map((field) => field.name));
-    const mergedFields = table.fields.map((field) => mergeFieldConfig(field, overrideFields.get(field.name)));
+    const mergedFields = table.fields.map((field) => {
+      const mergedField = mergeFieldConfig(field, overrideFields.get(field.name));
+      if (table.key === "tasks" && mergedField.name === "project") {
+        mergedField.required = false;
+      }
+      if (
+        (table.key === "projects" && mergedField.name === "target_date")
+        || (table.key === "tasks" && mergedField.name === "due_date")
+        || (table.key === "transactions" && mergedField.name === "due_date")
+      ) {
+        mergedField.required = false;
+      }
+      return mergedField;
+    });
     const existingFieldNames = new Set(defaultFieldNames);
     const customFields = (Array.isArray(overrideTable.fields) ? overrideTable.fields : [])
       .filter((field) => !defaultFieldNames.has(field.name))
@@ -3536,6 +3554,50 @@ function getRelationOptions(fieldName, currentTableKey, record = null) {
       })
       .filter((option) => option.value);
   }));
+}
+
+function getRelationSelectedValues(field, record, relation, relationOptions = []) {
+  const rawValue = record?.[field.name];
+  const rawValues = Array.isArray(rawValue) ? rawValue : [rawValue];
+  const selectedValues = new Set();
+  const sourceTables = relation?.tables ?? (relation?.table ? [relation.table] : []);
+
+  rawValues.forEach((value) => {
+    const normalizedValue = String(value ?? "").trim();
+    if (!normalizedValue) return;
+    selectedValues.add(normalizedValue);
+
+    relationOptions
+      .filter((option) => option.value === normalizedValue || option.label === normalizedValue)
+      .forEach((option) => selectedValues.add(option.value));
+
+    sourceTables.forEach((tableKey) => {
+      const rows = data[tableKey] ?? [];
+      const row = rows.find((item) => {
+        const labelFieldValue = relation?.labelField ? String(item?.[relation.labelField] ?? "").trim() : "";
+        return String(item?.id ?? "").trim() === normalizedValue
+          || labelFieldValue === normalizedValue
+          || String(getRecordLabel(tableKey, item)).trim() === normalizedValue
+          || (tableKey === "people" && formatPersonDisplayLabel(item) === normalizedValue);
+      });
+
+      if (!row) return;
+      const optionValue = relation?.labelField ? row[relation.labelField] : getRecordLabel(tableKey, row);
+      if (optionValue) selectedValues.add(String(optionValue));
+    });
+  });
+
+  return Array.from(selectedValues);
+}
+
+function includeCurrentRelationOptions(relationOptions = [], selectedValues = []) {
+  const optionValues = new Set(relationOptions.map((option) => String(option.value ?? "").trim()).filter(Boolean));
+  const currentOptions = selectedValues
+    .map((value) => String(value ?? "").trim())
+    .filter((value) => value && !optionValues.has(value))
+    .map((value) => ({ value, label: value }));
+
+  return currentOptions.length ? [...relationOptions, ...currentOptions] : relationOptions;
 }
 
 function getTableByKey(tableKey) {
@@ -8708,6 +8770,92 @@ function renderDurationField(field, record = null) {
   `;
 }
 
+const customRoleTitleOptionValue = "__custom_role_title__";
+
+function getRoleTitleOptions(field) {
+  const options = sortStringsAlpha(field.options ?? []);
+  return options.includes("Others") ? options : [...options, "Others"];
+}
+
+function renderRoleTitleField(field, record = null, inputName = field.name) {
+  const rawValue = String(record?.[field.name] ?? field.value ?? "").trim();
+  const options = getRoleTitleOptions(field);
+  const predefinedOptions = options.filter((option) => option !== "Others");
+  const usesCustomValue = rawValue && !predefinedOptions.includes(rawValue);
+  const selectedValue = usesCustomValue ? customRoleTitleOptionValue : rawValue;
+  const customValue = usesCustomValue ? rawValue : "";
+  const label = `${escapeHtml(field.label)}${field.required ? " *" : ""}`;
+  const required = field.required ? "required" : "";
+
+  return `
+    <label class="form-field role-title-field" data-role-title-field>
+      <span>${label}</span>
+      <select name="${escapeHtml(inputName)}_choice" ${required} data-role-title-select>
+        <option value="">Select</option>
+        ${predefinedOptions.map((option) => `<option value="${escapeHtml(option)}" ${selectedValue === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+        <option value="${customRoleTitleOptionValue}" ${selectedValue === customRoleTitleOptionValue ? "selected" : ""}>Others</option>
+      </select>
+      <input
+        class="role-title-custom-input ${usesCustomValue ? "" : "is-hidden"}"
+        name="${escapeHtml(inputName)}_other"
+        type="text"
+        value="${escapeHtml(customValue)}"
+        placeholder="Enter custom role title"
+        data-role-title-custom
+      />
+    </label>
+  `;
+}
+
+function getRoleTitleFormValue(formData, inputName = "role_title") {
+  const selectedValue = String(formData.get(`${inputName}_choice`) ?? "").trim();
+  if (selectedValue !== customRoleTitleOptionValue) return selectedValue;
+  return String(formData.get(`${inputName}_other`) ?? "").trim();
+}
+
+const customProjectTypeOptionValue = "__custom_project_type__";
+
+function getProjectTypeOptions(field) {
+  const options = sortStringsAlpha(field.options ?? []);
+  return options.includes("Others") ? options : [...options, "Others"];
+}
+
+function renderProjectTypeField(field, record = null) {
+  const rawValue = String(record?.[field.name] ?? field.value ?? "").trim();
+  const options = getProjectTypeOptions(field);
+  const predefinedOptions = options.filter((option) => option !== "Others");
+  const usesCustomValue = rawValue && !predefinedOptions.includes(rawValue);
+  const selectedValue = usesCustomValue ? customProjectTypeOptionValue : rawValue;
+  const customValue = usesCustomValue ? rawValue : "";
+  const label = `${escapeHtml(field.label)}${field.required ? " *" : ""}`;
+  const required = field.required ? "required" : "";
+
+  return `
+    <label class="form-field project-type-field" data-project-type-field>
+      <span>${label}</span>
+      <select name="${escapeHtml(field.name)}_choice" ${required} data-project-type-select>
+        <option value="">Select</option>
+        ${predefinedOptions.map((option) => `<option value="${escapeHtml(option)}" ${selectedValue === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+        <option value="${customProjectTypeOptionValue}" ${selectedValue === customProjectTypeOptionValue ? "selected" : ""}>Others</option>
+      </select>
+      <input
+        class="project-type-custom-input ${usesCustomValue ? "" : "is-hidden"}"
+        name="${escapeHtml(field.name)}_other"
+        type="text"
+        value="${escapeHtml(customValue)}"
+        placeholder="Enter custom project type"
+        data-project-type-custom
+      />
+    </label>
+  `;
+}
+
+function getProjectTypeFormValue(formData) {
+  const selectedValue = String(formData.get("type_choice") ?? "").trim();
+  if (selectedValue !== customProjectTypeOptionValue) return selectedValue;
+  return String(formData.get("type_other") ?? "").trim();
+}
+
 function renderInlinePrimaryContactPersonFields() {
   const peopleTable = getTableByKey("people");
   if (!peopleTable) return "";
@@ -8727,6 +8875,10 @@ function renderInlinePrimaryContactPersonFields() {
           const step = field.step ? `step="${escapeHtml(field.step)}"` : "";
           const inputMode = field.inputmode ? `inputmode="${escapeHtml(field.inputmode)}"` : "";
           const dataFormat = field.data_format ? `data-format="${escapeHtml(field.data_format)}"` : "";
+
+          if (field.name === "role_title") {
+            return renderRoleTitleField(field, null, inputName);
+          }
 
           if (field.type === "textarea") {
             return `
@@ -8774,8 +8926,9 @@ function renderInlinePrimaryContactPersonFields() {
 
 function renderField(field, record = null, currentTableKey = "") {
   const required = field.required ? "required" : "";
+  const shouldDefaultToToday = field.type === "date" && !dateFieldsWithoutCreateDefault.has(`${currentTableKey}.${field.name}`);
   const defaultValue = field.value ?? (
-    field.type === "date"
+    shouldDefaultToToday
       ? formatLocalDateForInput()
       : field.type === "datetime-local"
         ? formatLocalDateTimeForInput()
@@ -8790,12 +8943,17 @@ function renderField(field, record = null, currentTableKey = "") {
   const label = `${escapeHtml(field.label)}${field.required ? " *" : ""}`;
   const relation = getRelationConfig(field.name);
   const relationOptions = relation ? getRelationOptions(field.name, currentTableKey, record) : [];
-  const sortedRelationOptions = sortOptionsAlpha(relationOptions);
-  const selectedValues = Array.isArray(record?.[field.name])
-    ? record[field.name].map((value) => String(value))
-    : fieldValue
-      ? [String(fieldValue)]
-      : [];
+  const sortedBaseRelationOptions = sortOptionsAlpha(relationOptions);
+  const selectedValues = relation
+    ? getRelationSelectedValues(field, record, relation, sortedBaseRelationOptions)
+    : Array.isArray(record?.[field.name])
+      ? record[field.name].map((value) => String(value))
+      : fieldValue
+        ? [String(fieldValue)]
+        : [];
+  const sortedRelationOptions = relation
+    ? sortOptionsAlpha(includeCurrentRelationOptions(sortedBaseRelationOptions, selectedValues))
+    : sortedBaseRelationOptions;
   const isPeopleRelation = Boolean(relation) && (
     relation.table === "people" || (Array.isArray(relation.tables) && relation.tables.includes("people"))
   );
@@ -8806,6 +8964,14 @@ function renderField(field, record = null, currentTableKey = "") {
 
   if (currentTableKey === "tasks" && (field.name === "estimate" || field.name === "time_logged")) {
     return renderDurationField(field, record);
+  }
+
+  if (currentTableKey === "people" && field.name === "role_title") {
+    return renderRoleTitleField(field, record);
+  }
+
+  if (currentTableKey === "projects" && field.name === "type") {
+    return renderProjectTypeField(field, record);
   }
 
   if (isPeopleRelation) {
@@ -8896,6 +9062,8 @@ function renderField(field, record = null, currentTableKey = "") {
       ? (hierarchy.project ? "Select task" : "Select project first")
       : isProjectSelect
         ? (hierarchy.venture ? "Select project" : "Select venture first")
+        : currentTableKey === "tasks" && field.name === "parent_task"
+          ? (hierarchy.project ? "Select parent task" : "Project needed for parent task")
         : "Select";
     const disabledAttr = isTaskSelect
       ? (hierarchy.project ? "" : "disabled")
@@ -9025,6 +9193,8 @@ function openForm(key, recordId = null) {
   el.modal.classList.add("open");
   syncBodyModalState();
   bindFormattedInputs();
+  bindRoleTitleCustomInputs();
+  bindProjectTypeCustomInputs();
   bindOwnershipRepeater(key);
   bindHierarchyFilters(record);
   bindInlinePrimaryContactComposer();
@@ -9227,7 +9397,7 @@ function bindHierarchyFilters(record = null) {
     const options = sortOptionsAlpha(getRelationOptions("parent_task", state.activeTable, record));
 
     parentTaskSelect.innerHTML = [
-      `<option value="">${escapeHtml(selectedProject ? "Select parent task" : "Select project first")}</option>`,
+      `<option value="">${escapeHtml(selectedProject ? "Select parent task" : "Project needed for parent task")}</option>`,
       ...options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`),
     ].join("");
 
@@ -9286,6 +9456,40 @@ function bindFormattedInputs() {
 
     applyFormatting();
     input.addEventListener("input", applyFormatting);
+  });
+}
+
+function bindRoleTitleCustomInputs() {
+  el.form.querySelectorAll("[data-role-title-field]").forEach((fieldEl) => {
+    const select = fieldEl.querySelector("[data-role-title-select]");
+    const customInput = fieldEl.querySelector("[data-role-title-custom]");
+    if (!(select instanceof HTMLSelectElement) || !(customInput instanceof HTMLInputElement)) return;
+
+    const syncCustomInput = () => {
+      const isCustom = select.value === customRoleTitleOptionValue;
+      customInput.classList.toggle("is-hidden", !isCustom);
+      if (!isCustom) customInput.value = "";
+    };
+
+    select.addEventListener("change", syncCustomInput);
+    syncCustomInput();
+  });
+}
+
+function bindProjectTypeCustomInputs() {
+  el.form.querySelectorAll("[data-project-type-field]").forEach((fieldEl) => {
+    const select = fieldEl.querySelector("[data-project-type-select]");
+    const customInput = fieldEl.querySelector("[data-project-type-custom]");
+    if (!(select instanceof HTMLSelectElement) || !(customInput instanceof HTMLInputElement)) return;
+
+    const syncCustomInput = () => {
+      const isCustom = select.value === customProjectTypeOptionValue;
+      customInput.classList.toggle("is-hidden", !isCustom);
+      if (!isCustom) customInput.value = "";
+    };
+
+    select.addEventListener("change", syncCustomInput);
+    syncCustomInput();
   });
 }
 
@@ -9420,6 +9624,13 @@ function buildInlinePrimaryContactPersonDraft() {
         return;
       }
 
+      if (field.name === "role_title") {
+        const roleTitle = getRoleTitleFormValue(formData, inputName);
+        person[field.name] = roleTitle;
+        if (roleTitle) hasValues = true;
+        return;
+      }
+
       const rawValue = String(formData.get(inputName) ?? "").trim();
       person[field.name] = rawValue;
       if (rawValue) hasValues = true;
@@ -9468,6 +9679,16 @@ function buildRecordFromForm(table) {
           return { venture, stake };
         })
         .filter(Boolean);
+      return;
+    }
+
+    if (table.key === "people" && field.name === "role_title") {
+      record[field.name] = getRoleTitleFormValue(formData, field.name);
+      return;
+    }
+
+    if (table.key === "projects" && field.name === "type") {
+      record[field.name] = getProjectTypeFormValue(formData);
       return;
     }
 
