@@ -5092,6 +5092,102 @@ input[type="search"] {
   align-items: start;
 }
 
+.person-relation-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.inline-primary-contact-row.person-relation-input-row {
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+}
+
+.person-relation-input-row .multi-select-dropdown {
+  min-width: 0;
+}
+
+.person-relation-filter {
+  position: relative;
+  min-width: 96px;
+}
+
+.person-relation-filter-button {
+  list-style: none;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  padding: 12px 30px 12px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.person-relation-filter-button::-webkit-details-marker {
+  display: none;
+}
+
+.person-relation-filter-button::after {
+  content: "▾";
+  position: absolute;
+  right: 12px;
+  color: var(--muted);
+}
+
+.person-relation-filter[open] .person-relation-filter-button::after {
+  content: "▴";
+}
+
+.person-relation-filter-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  min-width: 260px;
+  max-width: min(360px, 78vw);
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+  padding: 8px;
+}
+
+.person-relation-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.person-relation-filter-option:hover {
+  background: #f7f7f7;
+}
+
+.person-relation-filter-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 16px;
+}
+
+.person-relation-filter-option span {
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
 .inline-primary-contact-toggle {
   width: 44px;
   height: 44px;
@@ -6418,6 +6514,25 @@ input[type="search"] {
 
   .duration-field-row {
     grid-template-columns: 1fr;
+  }
+
+  .person-relation-input-row,
+  .inline-primary-contact-row.person-relation-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .person-relation-filter {
+    width: 100%;
+  }
+
+  .person-relation-filter-button {
+    width: 100%;
+  }
+
+  .person-relation-filter-menu {
+    left: 0;
+    right: auto;
+    width: min(360px, 100%);
   }
 
   .grid-2,

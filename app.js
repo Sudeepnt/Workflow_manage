@@ -8793,6 +8793,43 @@ function renderDurationField(field, record = null) {
 
 const customRoleTitleOptionValue = "__custom_role_title__";
 
+function getPersonRelationOptionVenture(option) {
+  const person = getPersonByName(option?.value);
+  return String(person?.venture ?? "").trim();
+}
+
+function getPersonRelationVentureOptions(relationOptions = []) {
+  const ventures = new Set();
+  relationOptions.forEach((option) => {
+    const venture = getPersonRelationOptionVenture(option);
+    if (venture) ventures.add(venture);
+  });
+  return sortStringsAlpha(Array.from(ventures));
+}
+
+function renderPersonRelationVentureFilter(fieldName, relationOptions = []) {
+  const ventureOptions = getPersonRelationVentureOptions(relationOptions);
+  if (!ventureOptions.length) return "";
+
+  return `
+    <details class="person-relation-filter" data-person-relation-filter>
+      <summary class="person-relation-filter-button" data-person-relation-filter-summary>Filter</summary>
+      <div class="person-relation-filter-menu">
+        <label class="person-relation-filter-option">
+          <input type="checkbox" name="${escapeHtml(fieldName)}_venture_filter" value="all" data-person-relation-filter-option checked />
+          <span>All ventures</span>
+        </label>
+        ${ventureOptions.map((venture) => `
+          <label class="person-relation-filter-option">
+            <input type="checkbox" name="${escapeHtml(fieldName)}_venture_filter" value="${escapeHtml(venture)}" data-person-relation-filter-option />
+            <span>${escapeHtml(venture)}</span>
+          </label>
+        `).join("")}
+      </div>
+    </details>
+  `;
+}
+
 function getRoleTitleOptions(field) {
   const options = sortStringsAlpha(field.options ?? []);
   return options.includes("Others") ? options : [...options, "Others"];
@@ -8975,6 +9012,7 @@ function renderField(field, record = null, currentTableKey = "") {
   const sortedRelationOptions = relation
     ? sortOptionsAlpha(includeCurrentRelationOptions(sortedBaseRelationOptions, selectedValues))
     : sortedBaseRelationOptions;
+  const isDirectPeopleRelation = Boolean(relation) && relation.table === "people";
   const isPeopleRelation = Boolean(relation) && (
     relation.table === "people" || (Array.isArray(relation.tables) && relation.tables.includes("people"))
   );
@@ -9005,32 +9043,36 @@ function renderField(field, record = null, currentTableKey = "") {
         : "Select one or more";
 
       return `
-        <label class="form-field">
+        <label class="form-field ${isDirectPeopleRelation ? "person-relation-field" : ""}" ${isDirectPeopleRelation ? "data-person-relation-field" : ""}>
           <span>${label}</span>
-          <details class="multi-select-dropdown">
-            <summary class="multi-select-summary">${escapeHtml(summaryText)}</summary>
-            <div class="multi-select-menu">
-              ${sortedRelationOptions.map((option) => `
-                <label class="multi-select-option">
-                  <input type="checkbox" name="${escapeHtml(field.name)}" value="${escapeHtml(option.value)}" ${selectedValues.includes(option.value) ? "checked" : ""} />
-                  <span>${escapeHtml(option.label)}</span>
-                </label>
-              `).join("")}
-            </div>
-          </details>
+          <div class="${isDirectPeopleRelation ? "person-relation-input-row" : ""}">
+            <details class="multi-select-dropdown" ${isDirectPeopleRelation ? "data-person-relation-multi" : ""}>
+              <summary class="multi-select-summary">${escapeHtml(summaryText)}</summary>
+              <div class="multi-select-menu">
+                ${sortedRelationOptions.map((option) => `
+                  <label class="multi-select-option" ${isDirectPeopleRelation ? `data-person-relation-option-row data-person-venture="${escapeHtml(getPersonRelationOptionVenture(option))}"` : ""}>
+                    <input type="checkbox" name="${escapeHtml(field.name)}" value="${escapeHtml(option.value)}" ${selectedValues.includes(option.value) ? "checked" : ""} />
+                    <span>${escapeHtml(option.label)}</span>
+                  </label>
+                `).join("")}
+              </div>
+            </details>
+            ${isDirectPeopleRelation ? renderPersonRelationVentureFilter(field.name, sortedRelationOptions) : ""}
+          </div>
         </label>
       `;
     }
 
     if (currentTableKey === "ventures" && field.name === "primary_contact") {
       return `
-        <div class="form-field primary-contact-field">
+        <div class="form-field primary-contact-field person-relation-field" data-person-relation-field>
           <span>${label}</span>
-          <div class="inline-primary-contact-row">
+          <div class="inline-primary-contact-row person-relation-input-row">
             <select name="${escapeHtml(field.name)}" ${required} data-primary-contact-select>
               <option value="">Select</option>
-              ${sortedRelationOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${selectedValues.includes(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+              ${sortedRelationOptions.map((option) => `<option value="${escapeHtml(option.value)}" data-person-venture="${escapeHtml(getPersonRelationOptionVenture(option))}" ${selectedValues.includes(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
             </select>
+            ${renderPersonRelationVentureFilter(field.name, sortedRelationOptions)}
             <button class="inline-primary-contact-toggle" type="button" data-inline-primary-contact-toggle aria-label="Add person" title="Add person">+</button>
           </div>
           ${renderInlinePrimaryContactPersonFields()}
@@ -9039,12 +9081,15 @@ function renderField(field, record = null, currentTableKey = "") {
     }
 
     return `
-      <label class="form-field">
+      <label class="form-field ${isDirectPeopleRelation ? "person-relation-field" : ""}" ${isDirectPeopleRelation ? "data-person-relation-field" : ""}>
         <span>${label}</span>
-        <select name="${escapeHtml(field.name)}" ${required}>
-          <option value="">Select</option>
-          ${sortedRelationOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${selectedValues.includes(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
-        </select>
+        <div class="${isDirectPeopleRelation ? "person-relation-input-row" : ""}">
+          <select name="${escapeHtml(field.name)}" ${required} ${isDirectPeopleRelation ? "data-person-relation-select" : ""}>
+            <option value="">Select</option>
+            ${sortedRelationOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${isDirectPeopleRelation ? `data-person-venture="${escapeHtml(getPersonRelationOptionVenture(option))}"` : ""} ${selectedValues.includes(option.value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+          </select>
+          ${isDirectPeopleRelation ? renderPersonRelationVentureFilter(field.name, sortedRelationOptions) : ""}
+        </div>
       </label>
     `;
   }
@@ -9219,6 +9264,7 @@ function openForm(key, recordId = null) {
   bindOwnershipRepeater(key);
   bindHierarchyFilters(record);
   bindInlinePrimaryContactComposer();
+  bindPersonRelationFilters();
 }
 
 function openAdminUserForm(userId = null) {
@@ -9262,6 +9308,86 @@ function setSaveButtonLoading(isLoading, label = "Saving...") {
     el.saveButton.textContent = el.saveButton.dataset.defaultText;
     delete el.saveButton.dataset.defaultText;
   }
+}
+
+function getPersonRelationFilterSelectedVentures(filterEl) {
+  return Array.from(filterEl.querySelectorAll('[data-person-relation-filter-option]:checked'))
+    .map((input) => String(input.value ?? "").trim())
+    .filter((value) => value && value !== "all");
+}
+
+function updatePersonRelationFilterSummary(filterEl) {
+  const summary = filterEl.querySelector("[data-person-relation-filter-summary]");
+  if (!summary) return;
+
+  const selectedVentures = getPersonRelationFilterSelectedVentures(filterEl);
+  if (!selectedVentures.length) {
+    summary.textContent = "Filter";
+  } else if (selectedVentures.length === 1) {
+    summary.textContent = "1 venture";
+  } else {
+    summary.textContent = `${selectedVentures.length} ventures`;
+  }
+}
+
+function applyPersonRelationFilter(fieldEl) {
+  const filterEl = fieldEl.querySelector("[data-person-relation-filter]");
+  if (!filterEl) return;
+
+  const selectedVentures = getPersonRelationFilterSelectedVentures(filterEl);
+  const showAll = selectedVentures.length === 0;
+
+  fieldEl.querySelectorAll("select[data-person-relation-select], select[data-primary-contact-select]").forEach((select) => {
+    Array.from(select.options).forEach((option) => {
+      if (!option.value) return;
+      const venture = String(option.dataset.personVenture ?? "").trim();
+      const keepSelected = option.selected;
+      const shouldShow = showAll || selectedVentures.includes(venture) || keepSelected;
+      option.hidden = !shouldShow;
+      option.disabled = !shouldShow && !keepSelected;
+    });
+  });
+
+  fieldEl.querySelectorAll("[data-person-relation-option-row]").forEach((row) => {
+    const input = row.querySelector('input[type="checkbox"]');
+    const venture = String(row.dataset.personVenture ?? "").trim();
+    const keepChecked = Boolean(input?.checked);
+    row.hidden = !(showAll || selectedVentures.includes(venture) || keepChecked);
+  });
+
+  updatePersonRelationFilterSummary(filterEl);
+}
+
+function bindPersonRelationFilters() {
+  el.form.querySelectorAll("[data-person-relation-field]").forEach((fieldEl) => {
+    const filterEl = fieldEl.querySelector("[data-person-relation-filter]");
+    if (!filterEl) return;
+
+    filterEl.addEventListener("change", (event) => {
+      const input = event.target instanceof HTMLInputElement
+        ? event.target
+        : null;
+      if (!input?.matches("[data-person-relation-filter-option]")) return;
+
+      const optionInputs = Array.from(filterEl.querySelectorAll("[data-person-relation-filter-option]"));
+      const allInput = optionInputs.find((option) => option.value === "all");
+      const ventureInputs = optionInputs.filter((option) => option.value !== "all");
+
+      if (input.value === "all" && input.checked) {
+        ventureInputs.forEach((option) => {
+          option.checked = false;
+        });
+      } else {
+        if (allInput) allInput.checked = false;
+        const hasSelectedVenture = ventureInputs.some((option) => option.checked);
+        if (!hasSelectedVenture && allInput) allInput.checked = true;
+      }
+
+      applyPersonRelationFilter(fieldEl);
+    });
+
+    applyPersonRelationFilter(fieldEl);
+  });
 }
 
 function syncBodyModalState() {
