@@ -2034,6 +2034,21 @@ function formatPersonDisplayLabel(value) {
   return venture ? `${name} (${venture})` : name;
 }
 
+function formatPersonRelationOptionLabel(value) {
+  if (value == null || value === "") return "";
+
+  const row = typeof value === "object" && value !== null
+    ? value
+    : getPersonByName(value);
+  const name = String((row?.name ?? value) || "").trim();
+  if (!name) return "";
+
+  const roleTitle = String(row?.role_title ?? "").trim() || "No role title";
+  const venture = String(row?.venture ?? "").trim();
+  const label = `${name} - ${roleTitle}`;
+  return venture ? `${label} (${venture})` : label;
+}
+
 function getEntryLabel(entry) {
   if (entry == null) return "";
   if (typeof entry === "object") {
@@ -3546,7 +3561,10 @@ function getRelationOptions(fieldName, currentTableKey, record = null) {
       .filter((row) => !((fieldName === "parent_task" || fieldName === "depends_on") && currentTableKey === "tasks" && row.id === record?.id))
       .map((row) => {
         const value = relation.labelField ? row[relation.labelField] : getRecordLabel(tableKey, row);
-        const display = sourceTables.length > 1 && table ? `${value} (${table.title})` : value;
+        const optionLabel = tableKey === "people"
+          ? formatPersonRelationOptionLabel(row)
+          : String(value ?? "");
+        const display = sourceTables.length > 1 && table ? `${optionLabel} (${table.title})` : optionLabel;
         return {
           value: String(value ?? ""),
           label: String(display ?? ""),
@@ -6876,6 +6894,9 @@ function renderPeopleRecords(rows) {
                   ${renderPersonStatus(row.status || "No status")}
                 </div>
               </div>
+            </div>
+            <div class="person-card-role-title">
+              <span>${escapeHtml(row.role_title || "No role title")}</span>
             </div>
             <div class="person-card-actions">
               ${renderRecordActionIconButton("edit", `Edit ${row.name || row.title || row.reference || "record"}`, `data-record-action="edit" data-record-id="${escapeHtml(row.id)}"`)}
