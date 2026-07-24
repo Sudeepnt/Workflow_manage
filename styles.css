@@ -1657,6 +1657,7 @@ input[type="search"] {
 
 .attention-status-badge,
 .records-status-badge,
+.records-priority-badge,
 .attention-event-badge,
 .records-event-badge,
 .records-project-type-badge,
@@ -1681,6 +1682,7 @@ input[type="search"] {
 }
 
 .records-status-badge,
+.records-priority-badge,
 .records-event-badge,
 .records-project-type-badge,
 .records-document-type-badge,
@@ -1744,6 +1746,30 @@ input[type="search"] {
   color: #2563eb;
   border-color: rgba(37, 99, 235, 0.24);
   background: rgba(219, 234, 254, 0.92);
+}
+
+.records-priority-low {
+  color: #0f766e;
+  border-color: rgba(15, 118, 110, 0.24);
+  background: rgba(204, 251, 241, 0.92);
+}
+
+.records-priority-medium {
+  color: #c026d3;
+  border-color: rgba(192, 38, 211, 0.22);
+  background: rgba(250, 232, 255, 0.92);
+}
+
+.records-priority-high {
+  color: #be123c;
+  border-color: rgba(190, 18, 60, 0.22);
+  background: rgba(255, 228, 230, 0.92);
+}
+
+.records-priority-critical {
+  color: #111827;
+  border-color: rgba(17, 24, 39, 0.26);
+  background: rgba(229, 231, 235, 0.92);
 }
 
 .attention-event-meeting,
@@ -4742,6 +4768,38 @@ input[type="search"] {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+}
+
+.admin-access-scope-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-access-scope-field .multi-select-menu {
+  max-height: 260px;
+}
+
+.admin-role-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.admin-full-access-badge {
+  align-items: center;
+  background: rgba(17, 24, 39, 0.08);
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 999px;
+  color: #111827;
+  display: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.admin-full-access-badge.is-visible {
+  display: inline-flex;
 }
 
 .dashboard-row,

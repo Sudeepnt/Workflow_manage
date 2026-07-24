@@ -1275,7 +1275,63 @@ function validateUniquePasswords(excludeUserId = null) {
   return { valid: true, password: "", users: [] };
 }
 
+function encodeAccessScopeToken(kind, value) {
+  const normalizedKind = String(kind ?? "").trim();
+  const normalizedValue = String(value ?? "").trim();
+  if (!normalizedKind || !normalizedValue) return "";
+  return `scope:${normalizedKind}:${encodeURIComponent(normalizedValue)}`;
+}
+
+function parseAccessScopeToken(token) {
+  const value = String(token ?? "");
+  const match = value.match(/^scope:([a-z_]+):(.+)$/);
+  if (!match) return null;
+  try {
+    return {
+      kind: match[1],
+      value: decodeURIComponent(match[2]),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getAdminAccessScopeFromTokens(tokens = [], fallbackVentureScope = "All ventures") {
+  const scope = {
+    ventures: [],
+    projects: [],
+  };
+
+  (Array.isArray(tokens) ? tokens : []).forEach((token) => {
+    const parsed = parseAccessScopeToken(token);
+    if (!parsed?.value) return;
+    if (parsed.kind === "venture") scope.ventures.push(parsed.value);
+    if (parsed.kind === "project") scope.projects.push(parsed.value);
+  });
+
+  const ventureScope = String(fallbackVentureScope ?? "All ventures").trim();
+  if (ventureScope && ventureScope !== "All ventures" && !scope.ventures.length) {
+    scope.ventures.push(ventureScope);
+  }
+
+  return {
+    ventures: Array.from(new Set(scope.ventures)),
+    projects: Array.from(new Set(scope.projects)),
+  };
+}
+
+function buildAdminAccessTokens(user = {}) {
+  return [
+    ...(Array.isArray(user.access_ventures) ? user.access_ventures : [])
+      .map((value) => encodeAccessScopeToken("venture", value)),
+    ...(Array.isArray(user.access_projects) ? user.access_projects : [])
+      .map((value) => encodeAccessScopeToken("project", value)),
+  ].filter(Boolean);
+}
+
 function mapAdminUserFromSupabase(row = {}) {
+  const tableAccess = Array.isArray(row.table_access) ? row.table_access.map((value) => String(value)) : [];
+  const accessScope = getAdminAccessScopeFromTokens(tableAccess, row.venture_scope);
   return {
     id: String(row.id ?? ""),
     name: String(row.name ?? ""),
@@ -1284,22 +1340,26 @@ function mapAdminUserFromSupabase(row = {}) {
     role: String(row.role ?? "Employee"),
     status: String(row.status ?? "Active"),
     venture_scope: String(row.venture_scope ?? "All ventures"),
-    table_access: Array.isArray(row.table_access) ? row.table_access.map((value) => String(value)) : [],
+    access_ventures: accessScope.ventures,
+    access_projects: accessScope.projects,
+    table_access: tableAccess,
     createdAt: row.created_at ?? null,
     createdBy: String(row.created_by ?? "System"),
   };
 }
 
 function mapAdminUserToSupabase(user = {}) {
+  const role = String(user.role ?? "Employee").trim();
+  const isFullAccessRole = role === "Admin";
   return {
     id: String(user.id ?? "").trim(),
     name: String(user.name ?? "").trim(),
     email: String(user.email ?? "").trim(),
     password: String(user.password ?? "").trim(),
-    role: String(user.role ?? "Employee").trim(),
+    role,
     status: String(user.status ?? "Active").trim(),
-    venture_scope: String(user.venture_scope ?? "All ventures").trim(),
-    table_access: Array.isArray(user.table_access) ? user.table_access.map((value) => String(value)) : [],
+    venture_scope: isFullAccessRole ? "All ventures" : String(user.venture_scope ?? "All ventures").trim(),
+    table_access: isFullAccessRole ? [] : buildAdminAccessTokens(user),
     created_at: user.createdAt ?? new Date().toISOString(),
     created_by: String(user.createdBy ?? "System").trim() || "System",
   };
@@ -2131,11 +2191,11 @@ function getPersonLinkedVentures(personRow) {
 
   addVenture(personRow.venture);
 
-  (data.projects ?? [])
+  getAccessibleRows("projects")
     .filter((item) => String(item.lead ?? "").trim() === personName)
     .forEach((item) => addVenture(resolveRowVentureName(item)));
 
-  (data.tasks ?? [])
+  getAccessibleRows("tasks")
     .filter((item) => {
       const owner = String(item.owner ?? "").trim();
       const external = String(item.external_shared_with ?? "").trim();
@@ -2144,27 +2204,27 @@ function getPersonLinkedVentures(personRow) {
     })
     .forEach((item) => addVenture(resolveRowVentureName(item)));
 
-  (data.events ?? [])
+  getAccessibleRows("events")
     .filter((item) => Array.isArray(item.participants) && item.participants.map((name) => String(name).trim()).includes(personName))
     .forEach((item) => addVenture(resolveRowVentureName(item)));
 
-  (data.documents ?? [])
+  getAccessibleRows("documents")
     .filter((item) => Array.isArray(item.links) && item.links.map((value) => String(value).trim()).includes(personName))
     .forEach((item) => {
       addVenture(resolveRowVentureName(item));
 
       (Array.isArray(item.related_assets) ? item.related_assets : []).forEach((assetName) => {
-        const assetRow = data.assets.find((asset) => String(asset.name ?? "").trim() === String(assetName).trim()) ?? null;
+        const assetRow = getAccessibleRows("assets").find((asset) => String(asset.name ?? "").trim() === String(assetName).trim()) ?? null;
         addVenture(resolveRowVentureName(assetRow));
       });
 
       (Array.isArray(item.related_events) ? item.related_events : []).forEach((eventTitle) => {
-        const eventRow = data.events.find((event) => String(event.title ?? "").trim() === String(eventTitle).trim()) ?? null;
+        const eventRow = getAccessibleRows("events").find((event) => String(event.title ?? "").trim() === String(eventTitle).trim()) ?? null;
         addVenture(resolveRowVentureName(eventRow));
       });
 
       (Array.isArray(item.related_transactions) ? item.related_transactions : []).forEach((reference) => {
-        const transactionRow = data.transactions.find((transaction) => String(transaction.reference ?? "").trim() === String(reference).trim()) ?? null;
+        const transactionRow = getAccessibleRows("transactions").find((transaction) => String(transaction.reference ?? "").trim() === String(reference).trim()) ?? null;
         addVenture(resolveRowVentureName(transactionRow));
       });
     });
@@ -2185,15 +2245,15 @@ function getVentureLinkedPeople(ventureRow) {
     people.set(normalized, createTreeLeafNode("people", personRow, getRecordReferenceLabel("people", personRow)));
   };
 
-  (data.people ?? [])
+  getAccessibleRows("people")
     .filter((item) => String(item.venture ?? "").trim() === ventureName)
     .forEach((item) => addPerson(item.name));
 
-  (data.projects ?? [])
+  getAccessibleRows("projects")
     .filter((item) => String(resolveRowVentureName(item)) === ventureName)
     .forEach((item) => addPerson(item.lead));
 
-  (data.tasks ?? [])
+  getAccessibleRows("tasks")
     .filter((item) => String(resolveRowVentureName(item)) === ventureName)
     .forEach((item) => {
       addPerson(item.owner);
@@ -2201,13 +2261,13 @@ function getVentureLinkedPeople(ventureRow) {
       (Array.isArray(item.assignees) ? item.assignees : []).forEach(addPerson);
     });
 
-  (data.events ?? [])
+  getAccessibleRows("events")
     .filter((item) => String(resolveRowVentureName(item)) === ventureName)
     .forEach((item) => {
       (Array.isArray(item.participants) ? item.participants : []).forEach(addPerson);
     });
 
-  (data.documents ?? [])
+  getAccessibleRows("documents")
     .filter((item) => String(resolveRowVentureName(item)) === ventureName || (Array.isArray(item.links) && item.links.includes(ventureName)))
     .forEach((item) => {
       (Array.isArray(item.links) ? item.links : []).forEach(addPerson);
@@ -2818,7 +2878,7 @@ function getRecordFilterState(tableKey) {
 }
 
 function getFilterOptions(tableKey, fieldName) {
-  const rows = data[tableKey] ?? [];
+  const rows = getAccessibleRows(tableKey);
   const values = new Set();
   const targetTableKey = fieldName === "venture" ? "ventures" : fieldName === "project" ? "projects" : null;
 
@@ -2869,12 +2929,217 @@ function getLinkedFilterValues(tableKey, row, fieldName) {
   return values;
 }
 
+function isAdminAccessUser(user = state.currentUser) {
+  const role = String(user?.role ?? "").trim();
+  return role === "Admin";
+}
+
+function getProjectByName(projectName) {
+  const normalized = String(projectName ?? "").trim();
+  if (!normalized) return null;
+  return (data.projects ?? []).find((project) => String(project.name ?? "").trim() === normalized) ?? null;
+}
+
+function getTaskByTitle(taskTitle) {
+  const normalized = String(taskTitle ?? "").trim();
+  if (!normalized) return null;
+  return (data.tasks ?? []).find((task) => String(task.title ?? "").trim() === normalized) ?? null;
+}
+
+function getEffectiveUserAccessScope(user = state.currentUser) {
+  if (!user || isAdminAccessUser(user)) {
+    return { restricted: false, ventures: [], projects: [] };
+  }
+
+  const ventures = new Set(Array.isArray(user.access_ventures) ? user.access_ventures : []);
+  const projects = new Set(Array.isArray(user.access_projects) ? user.access_projects : []);
+  const ventureScope = String(user.venture_scope ?? "All ventures").trim();
+  if (ventureScope && ventureScope !== "All ventures") ventures.add(ventureScope);
+
+  projects.forEach((projectName) => {
+    const project = getProjectByName(projectName);
+    if (project?.venture) ventures.add(String(project.venture));
+  });
+
+  return {
+    restricted: true,
+    ventures: Array.from(ventures),
+    projects: Array.from(projects),
+  };
+}
+
+function normalizeAccessMatchValue(value) {
+  return String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function recordHasAnyValue(values = [], allowedValues = []) {
+  if (!allowedValues.length) return false;
+  const valueSet = new Set(values.map(normalizeAccessMatchValue).filter(Boolean));
+  return allowedValues.some((value) => valueSet.has(normalizeAccessMatchValue(value)));
+}
+
+function getPersonLinkedProjectValues(personRow = {}) {
+  const personName = String(personRow?.name ?? "").trim();
+  if (!personName) return [];
+
+  const projectValues = [];
+  (data.projects ?? [])
+    .filter((project) => String(project.lead ?? "").trim() === personName)
+    .forEach((project) => projectValues.push(String(project.name ?? "")));
+
+  (data.tasks ?? [])
+    .filter((task) => {
+      const owner = String(task.owner ?? "").trim();
+      const external = String(task.external_shared_with ?? "").trim();
+      const assignees = Array.isArray(task.assignees) ? task.assignees.map((name) => String(name).trim()) : [];
+      return owner === personName || external === personName || assignees.includes(personName);
+    })
+    .forEach((task) => {
+      if (task.project) projectValues.push(String(task.project));
+    });
+
+  (data.events ?? [])
+    .filter((event) => Array.isArray(event.participants) && event.participants.map((name) => String(name).trim()).includes(personName))
+    .forEach((event) => {
+      if (event.project) projectValues.push(String(event.project));
+    });
+
+  (data.documents ?? [])
+    .filter((documentRecord) => Array.isArray(documentRecord.links) && documentRecord.links.map((value) => String(value).trim()).includes(personName))
+    .forEach((documentRecord) => {
+      projectValues.push(...getRecordScopeValues("documents", documentRecord).projects);
+    });
+
+  return Array.from(new Set(projectValues.filter(Boolean)));
+}
+
+function getRecordScopeValues(tableKey, row) {
+  const ventureValues = getRowFilterMatchValue(row, "venture");
+  const projectValues = getRowFilterMatchValue(row, "project");
+  const taskValues = tableKey === "tasks"
+    ? getRowFilterMatchValue(row, "title")
+    : getRowFilterMatchValue(row, "task");
+  const linkValues = Array.isArray(row?.links)
+    ? row.links.map((value) => String(value ?? "").trim()).filter(Boolean)
+    : [];
+
+  if (tableKey === "projects") {
+    projectValues.push(...getRowFilterMatchValue(row, "name"));
+  }
+
+  projectValues.forEach((projectName) => {
+    const project = getProjectByName(projectName);
+    if (project?.venture) ventureValues.push(String(project.venture));
+  });
+
+  taskValues.forEach((taskTitle) => {
+    const task = getTaskByTitle(taskTitle);
+    if (!task) return;
+    if (task.project) projectValues.push(String(task.project));
+    if (task.venture) ventureValues.push(String(task.venture));
+    const project = getProjectByName(task.project);
+    if (project?.venture) ventureValues.push(String(project.venture));
+  });
+
+  linkValues.forEach((linkValue) => {
+    const linkedProject = getProjectByName(linkValue);
+    if (linkedProject) {
+      projectValues.push(String(linkedProject.name ?? ""));
+      if (linkedProject.venture) ventureValues.push(String(linkedProject.venture));
+    }
+
+    const linkedTask = getTaskByTitle(linkValue);
+    if (!linkedTask) return;
+    if (linkedTask.project) projectValues.push(String(linkedTask.project));
+    if (linkedTask.venture) ventureValues.push(String(linkedTask.venture));
+    const linkedTaskProject = getProjectByName(linkedTask.project);
+    if (linkedTaskProject?.venture) ventureValues.push(String(linkedTaskProject.venture));
+  });
+
+  if (tableKey === "transactions") {
+    const assetName = String(row?.project_asset ?? "").trim();
+    const assetRow = assetName
+      ? (data.assets ?? []).find((asset) => String(asset.name ?? "").trim() === assetName) ?? null
+      : null;
+    if (assetRow?.project) projectValues.push(String(assetRow.project));
+    if (assetRow?.venture) ventureValues.push(String(assetRow.venture));
+  }
+
+  if (tableKey === "documents") {
+    (Array.isArray(row?.related_assets) ? row.related_assets : []).forEach((assetName) => {
+      const assetRow = (data.assets ?? []).find((asset) => String(asset.name ?? "").trim() === String(assetName ?? "").trim()) ?? null;
+      if (assetRow?.project) projectValues.push(String(assetRow.project));
+      if (assetRow?.venture) ventureValues.push(String(assetRow.venture));
+    });
+
+    (Array.isArray(row?.related_events) ? row.related_events : []).forEach((eventTitle) => {
+      const eventRow = (data.events ?? []).find((event) => String(event.title ?? "").trim() === String(eventTitle ?? "").trim()) ?? null;
+      if (eventRow?.project) projectValues.push(String(eventRow.project));
+      if (eventRow?.venture) ventureValues.push(String(eventRow.venture));
+    });
+
+    (Array.isArray(row?.related_transactions) ? row.related_transactions : []).forEach((reference) => {
+      const transactionRow = (data.transactions ?? []).find((transaction) => String(transaction.reference ?? "").trim() === String(reference ?? "").trim()) ?? null;
+      if (transactionRow?.project) projectValues.push(String(transactionRow.project));
+      if (transactionRow?.venture) ventureValues.push(String(transactionRow.venture));
+      const assetName = String(transactionRow?.project_asset ?? "").trim();
+      const assetRow = assetName
+        ? (data.assets ?? []).find((asset) => String(asset.name ?? "").trim() === assetName) ?? null
+        : null;
+      if (assetRow?.project) projectValues.push(String(assetRow.project));
+      if (assetRow?.venture) ventureValues.push(String(assetRow.venture));
+    });
+  }
+
+  return {
+    ventures: Array.from(new Set(ventureValues.filter(Boolean))),
+    projects: Array.from(new Set(projectValues.filter(Boolean))),
+    tasks: Array.from(new Set(taskValues.filter(Boolean))),
+  };
+}
+
+function canAccessRecord(tableKey, row, user = state.currentUser) {
+  const scope = getEffectiveUserAccessScope(user);
+  if (!scope.restricted) return true;
+
+  if (tableKey === ADMIN_USERS_TABLE || tableKey === "audit") return false;
+
+  const recordScope = getRecordScopeValues(tableKey, row);
+  if (tableKey === "ventures") {
+    return !scope.ventures.length || recordHasAnyValue(getRowFilterMatchValue(row, "name"), scope.ventures);
+  }
+
+  if (tableKey === "people") {
+    if (scope.projects.length) return recordHasAnyValue(getPersonLinkedProjectValues(row), scope.projects);
+    return !scope.ventures.length || recordHasAnyValue(recordScope.ventures, scope.ventures);
+  }
+
+  if (tableKey === "projects") {
+    if (scope.projects.length) return recordHasAnyValue(recordScope.projects, scope.projects);
+    return !scope.ventures.length || recordHasAnyValue(recordScope.ventures, scope.ventures);
+  }
+
+  if (tableKey === "tasks") {
+    if (scope.projects.length) return recordHasAnyValue(recordScope.projects, scope.projects);
+    return !scope.ventures.length || recordHasAnyValue(recordScope.ventures, scope.ventures);
+  }
+
+  if (scope.projects.length && recordHasAnyValue(recordScope.projects, scope.projects)) return true;
+  if (scope.projects.length) return false;
+  if (scope.ventures.length) return recordHasAnyValue(recordScope.ventures, scope.ventures);
+  return true;
+}
+
+function getAccessibleRows(tableKey) {
+  return (data[tableKey] ?? []).filter((row) => canAccessRecord(tableKey, row));
+}
+
 function getFilteredAndSortedRows(table) {
   const query = state.search.trim().toLowerCase();
   const filters = getRecordFilterState(table.key);
   const archivedViewMode = getArchivedViewMode(table.key);
 
-  let rows = data[table.key].filter((row) => {
+  let rows = getAccessibleRows(table.key).filter((row) => {
     if (canArchiveRecord(table.key) && isRecordArchived(row) !== (archivedViewMode === "archived")) return false;
 
     if (query) {
@@ -3164,7 +3429,7 @@ function getAssetStreetViewEmbedUrl(asset) {
 
 function openAssetStreetView(assetId) {
   if (!assetId) return;
-  const asset = data.assets.find((item) => item.id === assetId) ?? null;
+  const asset = getAccessibleRows("assets").find((item) => item.id === assetId) ?? null;
   if (!asset || !hasValidAssetCoordinates(asset)) return;
   captureAssetMapViewport();
   state.assetStreetViewAssetId = assetId;
@@ -3533,7 +3798,7 @@ function getRelationOptions(fieldName, currentTableKey, record = null) {
   const hierarchy = getHierarchyContext(record);
   return sortOptionsAlpha(sourceTables.flatMap((tableKey) => {
     const table = tables.find((item) => item.key === tableKey);
-    const rows = data[tableKey] ?? [];
+    const rows = getAccessibleRows(tableKey);
     return rows
       .filter((row) => {
         if (currentTableKey === "tasks" && fieldName === "project") {
@@ -3590,7 +3855,7 @@ function getRelationSelectedValues(field, record, relation, relationOptions = []
       .forEach((option) => selectedValues.add(option.value));
 
     sourceTables.forEach((tableKey) => {
-      const rows = data[tableKey] ?? [];
+      const rows = getAccessibleRows(tableKey);
       const row = rows.find((item) => {
         const labelFieldValue = relation?.labelField ? String(item?.[relation.labelField] ?? "").trim() : "";
         return String(item?.id ?? "").trim() === normalizedValue
@@ -3623,7 +3888,7 @@ function getTableByKey(tableKey) {
 }
 
 function getRowsByFieldValue(tableKey, fieldName, value) {
-  const rows = data[tableKey] ?? [];
+  const rows = getAccessibleRows(tableKey);
   return rows.filter((row) => {
     const fieldValue = row[fieldName];
     if (Array.isArray(fieldValue)) return fieldValue.map(String).includes(String(value));
@@ -3642,7 +3907,7 @@ function getLinkedDocumentsForRecord(targetTableKey, value) {
 
   if (!fieldName) return [];
 
-  return (data.documents ?? []).filter((row) => {
+  return getAccessibleRows("documents").filter((row) => {
     if (Array.isArray(row.links) && row.links.map(String).includes(String(value))) return true;
     const fieldValue = row[fieldName];
     if (Array.isArray(fieldValue)) return fieldValue.map(String).includes(String(value));
@@ -3656,7 +3921,7 @@ function getLinkedRecordsFromDocumentLinks(documentRecord, targetTableKey) {
     : [];
   if (!linkValues.length) return [];
 
-  return (data[targetTableKey] ?? []).filter((row) => {
+  return getAccessibleRows(targetTableKey).filter((row) => {
     const label = String(getRecordLabel(targetTableKey, row) ?? "").trim();
     return label && linkValues.includes(label);
   });
@@ -3665,7 +3930,7 @@ function getLinkedRecordsFromDocumentLinks(documentRecord, targetTableKey) {
 function getLinkedTransactionsForAsset(assetValue) {
   const normalizedAsset = String(assetValue ?? "").trim();
   if (!normalizedAsset) return [];
-  return (data.transactions ?? []).filter((row) => String(row?.project_asset ?? "").trim() === normalizedAsset);
+  return getAccessibleRows("transactions").filter((row) => String(row?.project_asset ?? "").trim() === normalizedAsset);
 }
 
 function getLinkedDocumentsForTransactions(transactionRows = []) {
@@ -3675,7 +3940,7 @@ function getLinkedDocumentsForTransactions(transactionRows = []) {
     documentValues.forEach((value) => {
       const normalized = String(value ?? "").trim();
       if (!normalized || documentMap.has(normalized)) return;
-      const documentRow = (data.documents ?? []).find((item) => {
+      const documentRow = getAccessibleRows("documents").find((item) => {
         const candidates = [item?.id, item?.title, item?.reference, item?.name]
           .map((entry) => String(entry ?? "").trim())
           .filter(Boolean);
@@ -3701,7 +3966,7 @@ function getLinkedTransactionsForDocument(documentRecord) {
 
   if (!documentTokens.length) return [];
 
-  const matchedTransactions = (data.transactions ?? []).filter((row) => {
+  const matchedTransactions = getAccessibleRows("transactions").filter((row) => {
     const documentValues = Array.isArray(row?.documents) ? row.documents : [];
     return documentValues.some((value) => documentTokens.includes(String(value ?? "").trim()));
   });
@@ -3716,7 +3981,7 @@ function getLinkedAssetsForDocument(documentRecord) {
   const addAsset = (value) => {
     const normalized = String(value ?? "").trim();
     if (!normalized || assetMap.has(normalized)) return;
-    const assetRow = data.assets.find((item) => String(item.name ?? "").trim() === normalized) ?? null;
+    const assetRow = getAccessibleRows("assets").find((item) => String(item.name ?? "").trim() === normalized) ?? null;
     if (!assetRow) return;
     assetMap.set(normalized, assetRow);
   };
@@ -3740,7 +4005,7 @@ function getLinkedEventsForDocument(documentRecord) {
     .forEach((value) => {
       const normalized = String(value ?? "").trim();
       if (!normalized) return;
-      const eventRow = (data.events ?? []).find((row) => String(row?.title ?? "").trim() === normalized) ?? null;
+      const eventRow = getAccessibleRows("events").find((row) => String(row?.title ?? "").trim() === normalized) ?? null;
       if (eventRow) addEvent(eventRow);
     });
   getLinkedRecordsFromDocumentLinks(documentRecord, "events").forEach(addEvent);
@@ -3801,6 +4066,7 @@ function getRecordConnections(tableKey, record) {
     return Array.from(grouped.values()).map((connection) => {
       const seen = new Set();
       connection.items = connection.items.filter((item) => {
+        if (!item?.tableKey || !item?.row || !canAccessRecord(item.tableKey, item.row)) return false;
         const itemKey = `${item.tableKey}:${item.id ?? item.label}`;
         if (seen.has(itemKey)) return false;
         seen.add(itemKey);
@@ -3812,7 +4078,7 @@ function getRecordConnections(tableKey, record) {
 
   const findRelatedRecord = (sourceTables, value, relation) => {
     for (const sourceTableKey of sourceTables) {
-      const rows = data[sourceTableKey] ?? [];
+      const rows = getAccessibleRows(sourceTableKey);
       const found = rows.find((candidate) => {
         const candidateValue = relation?.labelField ? candidate[relation.labelField] : getRecordLabel(sourceTableKey, candidate);
         return String(candidateValue) === String(value);
@@ -3891,7 +4157,7 @@ function getRecordConnections(tableKey, record) {
       .map((entry) => {
         const ventureName = getEntryLabel(entry);
         if (!ventureName) return null;
-        const found = data.ventures.find((item) => item.name === ventureName) ?? null;
+        const found = getAccessibleRows("ventures").find((item) => item.name === ventureName) ?? null;
         if (!found) return null;
         const stake = getEntryStake(entry);
         return {
@@ -3987,7 +4253,7 @@ function getRecordConnections(tableKey, record) {
     );
     addConnection(
       "tasks",
-      (data.tasks ?? [])
+      getAccessibleRows("tasks")
         .filter((item) => {
           const owner = String(item.owner ?? "").trim();
           const external = String(item.external_shared_with ?? "").trim();
@@ -4039,7 +4305,7 @@ function getRecordConnections(tableKey, record) {
     ]
       .filter(Boolean)
       .map(({ name, suffix }) => {
-        const found = data.people.find((item) => item.name === name) ?? null;
+        const found = getAccessibleRows("people").find((item) => item.name === name) ?? null;
         if (!found) return null;
         return {
           label: `${formatPersonDisplayLabel(found)} · ${suffix}`,
@@ -4053,7 +4319,7 @@ function getRecordConnections(tableKey, record) {
     addConnection("people", taskPeople, "people", "linked");
     addConnection(
       "documents",
-      (data.documents ?? [])
+      getAccessibleRows("documents")
         .filter((item) => String(item.task ?? "").trim() === rowLabel || (Array.isArray(item.links) && item.links.includes(rowLabel)))
         .map((item) => ({
         label: getRecordReferenceLabel("documents", item),
@@ -4308,8 +4574,8 @@ function getTaskPeopleTreeNodes(taskRow) {
   ]
     .filter(Boolean)
     .map(({ name, suffix }) => {
-      const found = data.people.find((item) => item.name === name) ?? null;
-      if (!found) return null;
+      const found = getAccessibleRows("people").find((item) => item.name === name) ?? null;
+      if (!found || !canAccessRecord("people", found)) return null;
       return createTreeLeafNode("people", found, `${formatPersonDisplayLabel(found)} · ${suffix}`);
     })
     .filter(Boolean);
@@ -4345,7 +4611,7 @@ function getTaskAncestorChain(taskRow) {
 }
 
 function getHierarchyAttachmentRowsForLevel(tableKey, level, levelRecord) {
-  const rows = data[tableKey] ?? [];
+  const rows = getAccessibleRows(tableKey);
   if (level === "task") {
     const taskTitle = String(levelRecord?.title ?? "").trim();
     return rows.filter((item) => String(item?.task ?? "").trim() === taskTitle);
@@ -4419,7 +4685,7 @@ function buildHierarchyTaskSubtree(taskRow) {
   if (peopleGroup) children.push(peopleGroup);
   appendHierarchyLevelAttachments(children, "task", taskRow);
 
-  const subtaskNodes = (data.tasks ?? [])
+  const subtaskNodes = getAccessibleRows("tasks")
     .filter((item) => String(item.parent_task ?? "").trim() === String(taskRow.title ?? "").trim())
     .map((item) => buildHierarchyTaskSubtree(item));
   const taskGroup = createTreeGroup("Tasks", subtaskNodes);
@@ -4445,7 +4711,7 @@ function buildFocusedTaskChain(taskChain, options = {}) {
       appendFocusedAttachmentNode(children, options.onlyRecord);
     } else {
       appendHierarchyLevelAttachments(children, "task", currentTask);
-      const subtaskNodes = (data.tasks ?? [])
+      const subtaskNodes = getAccessibleRows("tasks")
         .filter((item) => String(item.parent_task ?? "").trim() === String(currentTask.title ?? "").trim())
         .map((item) => buildHierarchyTaskSubtree(item));
       const taskGroup = createTreeGroup("Tasks", subtaskNodes);
@@ -4469,7 +4735,7 @@ function buildHierarchyProjectSubtree(projectRow, options = {}) {
     } else {
       appendHierarchyLevelAttachments(children, "project", projectRow);
     }
-    const taskNodes = (data.tasks ?? [])
+    const taskNodes = getAccessibleRows("tasks")
       .filter((item) => String(item.project ?? "").trim() === String(projectRow.name ?? "").trim() && !String(item.parent_task ?? "").trim())
       .map((item) => buildHierarchyTaskSubtree(item));
     const taskGroup = createTreeGroup("Tasks", taskNodes);
@@ -4525,7 +4791,7 @@ function buildHierarchyTree(tableKey, record) {
     if (projectGroup) ventureChildren.push(projectGroup);
   } else if (tableKey === "ventures") {
     appendHierarchyLevelAttachments(ventureChildren, "venture", ventureRow);
-    const projectNodes = (data.projects ?? [])
+    const projectNodes = getAccessibleRows("projects")
       .filter((item) => String(item.venture ?? "").trim() === String(ventureRow.name ?? "").trim())
       .map((item) => buildHierarchyProjectSubtree(item));
     const projectGroup = createTreeGroup("Projects", projectNodes);
@@ -4603,7 +4869,7 @@ function renderConnectionTreeNode(node) {
     ? `<span class="connection-node-icon" aria-hidden="true">${getTableIcon(node.iconKey)}</span>`
     : "";
   const rootRow = node.isRoot && node.id
-    ? data[node.tableKey]?.find((item) => item.id === node.id) ?? null
+    ? getAccessibleRows(node.tableKey).find((item) => item.id === node.id) ?? null
     : null;
   const venturePrimaryContact = node.isRoot && node.tableKey === "ventures"
     ? String(rootRow?.primary_contact ?? "").trim()
@@ -4672,7 +4938,7 @@ function getExpandedLinkedGroups(tableKey, record) {
       if (!seen.has(itemKey)) {
         seen.add(itemKey);
         if (!grouped.has(node.tableKey)) grouped.set(node.tableKey, []);
-        const sourceRow = data[node.tableKey]?.find((item) => item.id === node.id) ?? null;
+        const sourceRow = getAccessibleRows(node.tableKey).find((item) => item.id === node.id) ?? null;
         grouped.get(node.tableKey).push({
           label: getRecordReferenceLabel(node.tableKey, sourceRow ?? node),
           tableKey: node.tableKey,
@@ -4996,7 +5262,7 @@ function renderMeta() {
   const activeItem = sidebarItems.find((item) => item.key === state.activeNav);
   const activeTable = tables.find((item) => item.key === state.activeNav) ?? null;
   const countSuffix = activeTable
-    ? ` (${data[activeTable.key]?.length ?? 0})`
+    ? ` (${getAccessibleRows(activeTable.key).length})`
     : state.activeNav === "admin"
       ? ` (${userAccounts.length})`
       : state.activeNav === "audit"
@@ -5090,10 +5356,16 @@ function syncViewportState() {
   applySidebarState();
 }
 
+function canAccessNavItem(item) {
+  if (!item) return false;
+  if (item.key === "admin" || item.key === "audit") return isAdminAccessUser();
+  return true;
+}
+
 function renderSidebarNav() {
-  el.sidebarNav.innerHTML = sidebarItems.map((item) => {
+  el.sidebarNav.innerHTML = sidebarItems.filter(canAccessNavItem).map((item) => {
     const label = getSidebarItemLabel(item);
-    const count = item.kind === "table" ? `<span class="sidebar-nav-count">${data[item.key].length}</span>` : "";
+    const count = item.kind === "table" ? `<span class="sidebar-nav-count">${getAccessibleRows(item.key).length}</span>` : "";
     const active = state.activeNav === item.key ? "active" : "";
     const dividerClass = ["dashboard", "transactions"].includes(item.key) ? " sidebar-nav-item-divider" : "";
     return `
@@ -5185,7 +5457,7 @@ function renderBoard() {
   el.board.innerHTML = tables.map((table) => `
     <article class="table-tile" data-open-list="${table.key}">
       <div class="table-tile-head">
-        <div class="table-count">${data[table.key].length}</div>
+        <div class="table-count">${getAccessibleRows(table.key).length}</div>
         <button class="table-action-button" type="button" data-open-form="${table.key}" aria-label="Add ${escapeHtml(table.singular || table.title)}">+</button>
       </div>
       <div class="table-meta">
@@ -6006,9 +6278,9 @@ function formatAttentionTiming(dateKey) {
 }
 
 function getProjectLinkedSummary(projectName) {
-  const openTasks = data.tasks
+  const openTasks = getAccessibleRows("tasks")
     .filter((task) => task.project === projectName && !["Done", "Cancelled"].includes(task.status));
-  const upcomingEvents = data.events
+  const upcomingEvents = getAccessibleRows("events")
     .filter((event) => event.project === projectName && event.date >= getTodayKey())
     .sort((left, right) => String(left.date).localeCompare(String(right.date)));
 
@@ -6020,8 +6292,8 @@ function getProjectLinkedSummary(projectName) {
 }
 
 function getTaskLinkedSummary(taskTitle, projectName) {
-  const linkedProject = data.projects.find((project) => project.name === projectName) ?? null;
-  const nextEvent = data.events
+  const linkedProject = getAccessibleRows("projects").find((project) => project.name === projectName) ?? null;
+  const nextEvent = getAccessibleRows("events")
     .filter((event) => event.date >= getTodayKey())
     .filter((event) => event.task === taskTitle || (projectName && event.project === projectName))
     .sort((left, right) => {
@@ -6038,8 +6310,8 @@ function getTaskLinkedSummary(taskTitle, projectName) {
 }
 
 function getEventLinkedSummary(eventItem) {
-  const linkedProject = data.projects.find((project) => project.name === eventItem.project) ?? null;
-  const linkedTask = data.tasks.find((task) => task.title === eventItem.task) ?? null;
+  const linkedProject = getAccessibleRows("projects").find((project) => project.name === eventItem.project) ?? null;
+  const linkedTask = getAccessibleRows("tasks").find((task) => task.title === eventItem.task) ?? null;
 
   return {
     projectTargetDate: linkedProject?.target_date ?? null,
@@ -6052,7 +6324,7 @@ function getDashboardAttentionItems() {
   const todayKey = getTodayKey();
   const items = [];
 
-  data.projects.forEach((project) => {
+  getAccessibleRows("projects").forEach((project) => {
     if (!project.target_date || !["Active", "Blocked", "On-Hold"].includes(project.status)) return;
     const linked = getProjectLinkedSummary(project.name);
     items.push({
@@ -6075,7 +6347,7 @@ function getDashboardAttentionItems() {
     });
   });
 
-  data.tasks.forEach((task) => {
+  getAccessibleRows("tasks").forEach((task) => {
     if (!task.due_date || ["Done", "Cancelled"].includes(task.status)) return;
     const linked = getTaskLinkedSummary(task.title, task.project);
     items.push({
@@ -6098,7 +6370,7 @@ function getDashboardAttentionItems() {
     });
   });
 
-  data.events.forEach((event) => {
+  getAccessibleRows("events").forEach((event) => {
     if (!event.date || event.date < todayKey) return;
     const linked = getEventLinkedSummary(event);
     items.push({
@@ -6231,7 +6503,7 @@ function renderDashboardAttention() {
 }
 
 function getGanttTimelineItems() {
-  const taskItems = (data.tasks ?? [])
+  const taskItems = getAccessibleRows("tasks")
     .map((task) => {
       const linkedProject = getProjectByName(task.project);
       const end = getDateAtDayStart(task.due_date);
@@ -6253,7 +6525,7 @@ function getGanttTimelineItems() {
     })
     .filter(Boolean);
 
-  const eventItems = (data.events ?? [])
+  const eventItems = getAccessibleRows("events")
     .map((event) => {
       const start = getDateAtDayStart(event.start || event.date);
       if (!start) return null;
@@ -6314,7 +6586,7 @@ function renderGanttChart() {
       width: Math.min((spanDays / visibleDays.length) * 100, 100 - (offsetDays / visibleDays.length) * 100),
     };
   };
-  const projectRows = (data.projects ?? [])
+  const projectRows = getAccessibleRows("projects")
     .slice()
     .sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), undefined, { numeric: true }))
     .map((project, index) => {
@@ -6330,7 +6602,7 @@ function renderGanttChart() {
         color: "purple",
       };
     });
-  const baseTaskRows = (data.tasks ?? [])
+  const baseTaskRows = getAccessibleRows("tasks")
     .slice()
     .sort((left, right) => String(left.title || "").localeCompare(String(right.title || ""), undefined, { numeric: true }))
     .map((task) => {
@@ -6368,7 +6640,7 @@ function renderGanttChart() {
   baseTaskRows
     .filter((task) => !task.parentTask || !taskRowsByKey.has(task.parentTask))
     .forEach((task) => appendTaskBranch(task, 0));
-  const eventRows = (data.events ?? [])
+  const eventRows = getAccessibleRows("events")
     .slice()
     .sort((left, right) => String(left.start || left.date || "").localeCompare(String(right.start || right.date || "")))
     .map((event) => {
@@ -6685,6 +6957,10 @@ function renderTaskStatusBadge(status, variant = "records") {
   return renderBadge(status, variant, "status");
 }
 
+function renderTaskPriorityBadge(priority, variant = "records") {
+  return renderBadge(priority, variant, "priority");
+}
+
 function renderEventTypeBadge(type, variant = "records") {
   return renderBadge(type, variant, "event");
 }
@@ -6697,8 +6973,58 @@ function renderDocumentTypeBadge(type, variant = "records") {
   return renderBadge(type, variant, "document-type");
 }
 
+const knownProjectTypeClassNames = new Set([
+  "development",
+  "marketing",
+  "acquisition",
+  "leasing",
+  "infra",
+  "capitalraise",
+  "logistics",
+  "internal",
+]);
+
+const customProjectTypeBadgeColors = [
+  { text: "#be123c", border: "rgba(190, 18, 60, 0.22)", background: "rgba(255, 228, 230, 0.92)" },
+  { text: "#4338ca", border: "rgba(67, 56, 202, 0.22)", background: "rgba(224, 231, 255, 0.92)" },
+  { text: "#047857", border: "rgba(4, 120, 87, 0.22)", background: "rgba(209, 250, 229, 0.92)" },
+  { text: "#a21caf", border: "rgba(162, 28, 175, 0.22)", background: "rgba(250, 232, 255, 0.92)" },
+  { text: "#0369a1", border: "rgba(3, 105, 161, 0.22)", background: "rgba(224, 242, 254, 0.92)" },
+  { text: "#854d0e", border: "rgba(133, 77, 14, 0.22)", background: "rgba(254, 249, 195, 0.92)" },
+  { text: "#0f766e", border: "rgba(15, 118, 110, 0.22)", background: "rgba(204, 251, 241, 0.92)" },
+  { text: "#be185d", border: "rgba(190, 24, 93, 0.22)", background: "rgba(252, 231, 243, 0.92)" },
+  { text: "#334155", border: "rgba(51, 65, 85, 0.24)", background: "rgba(241, 245, 249, 0.92)" },
+  { text: "#65a30d", border: "rgba(101, 163, 13, 0.24)", background: "rgba(236, 252, 203, 0.92)" },
+  { text: "#c2410c", border: "rgba(194, 65, 12, 0.22)", background: "rgba(255, 237, 213, 0.92)" },
+  { text: "#6d28d9", border: "rgba(109, 40, 217, 0.22)", background: "rgba(237, 233, 254, 0.92)" },
+];
+
+function getGeneratedCustomProjectTypeBadgeColor(index) {
+  const hue = ((index - customProjectTypeBadgeColors.length) * 47 + 11) % 360;
+  return {
+    text: `hsl(${hue} 78% 32%)`,
+    border: `hsl(${hue} 72% 45% / 0.22)`,
+    background: `hsl(${hue} 82% 94% / 0.92)`,
+  };
+}
+
+function getCustomProjectTypeBadgeStyle(type) {
+  const normalizedType = getStatusClassName(type);
+  if (!normalizedType || knownProjectTypeClassNames.has(normalizedType)) return "";
+
+  const customTypeKeys = Array.from(new Set((data.projects ?? [])
+    .map((project) => getStatusClassName(project?.type))
+    .filter((typeKey) => typeKey && !knownProjectTypeClassNames.has(typeKey))))
+    .sort((left, right) => left.localeCompare(right));
+  const typeIndex = Math.max(0, customTypeKeys.indexOf(normalizedType));
+  const color = customProjectTypeBadgeColors[typeIndex] ?? getGeneratedCustomProjectTypeBadgeColor(typeIndex);
+  return ` style="color:${color.text}; border-color:${color.border}; background:${color.background};"`;
+}
+
 function renderProjectTypeBadge(type, variant = "records") {
-  return renderBadge(type, variant, "project-type");
+  const badgeClass = getStatusClassName(type);
+  if (!badgeClass) return escapeHtml(String(type || "—"));
+  return `<span class="${variant}-project-type-badge ${variant}-project-type-${badgeClass}"${variant === "records" ? getCustomProjectTypeBadgeStyle(type) : ""}>${escapeHtml(String(type))}</span>`;
 }
 
 function renderDirectionBadge(direction, variant = "records") {
@@ -6758,6 +7084,9 @@ function renderCellMarkup(tableKey, column, row) {
   }
   if ((tableKey === "tasks" || tableKey === "projects") && column === "status" && value !== "—") {
     return renderTaskStatusBadge(value, "records");
+  }
+  if (tableKey === "tasks" && column === "priority" && value !== "—") {
+    return renderTaskPriorityBadge(value, "records");
   }
   if (tableKey === "projects" && column === "type" && value !== "—") {
     return renderProjectTypeBadge(value, "records");
@@ -7202,7 +7531,7 @@ function renderRecordsToolbar(table, rows, filters, ventureOptions, projectOptio
   const showAssetsViewToggle = table.key === "assets";
   const showArchiveToggle = canArchiveRecord(table.key);
   const archiveViewMode = getArchivedViewMode(table.key);
-  const archivedCount = showArchiveToggle ? data[table.key].filter(isRecordArchived).length : 0;
+  const archivedCount = showArchiveToggle ? getAccessibleRows(table.key).filter(isRecordArchived).length : 0;
   const toolbarClasses = [
     "records-toolbar",
     showArchiveToggle ? "has-archive-toggle" : "",
@@ -7325,7 +7654,7 @@ function renderAssetMapPanel(rows) {
     .join(", ");
   const apiKey = state.googleMapsApiKey || getGoogleMapsApiKey();
   const activeStreetViewAsset = state.assetStreetViewAssetId
-    ? rows.find((asset) => asset.id === state.assetStreetViewAssetId) ?? data.assets.find((asset) => asset.id === state.assetStreetViewAssetId) ?? null
+    ? rows.find((asset) => asset.id === state.assetStreetViewAssetId) ?? null
     : null;
   const stageToolbar = `
     <div class="asset-map-stage-toolbar">
@@ -7510,6 +7839,7 @@ function bindRecordRowActions(table) {
       const { recordAction, recordId } = button.dataset;
       if (recordAction === "visit") {
         const record = data[table.key]?.find((item) => item.id === recordId) ?? null;
+        if (!record || !canAccessRecord(table.key, record)) return;
         const visitUrl = getDocumentVisitUrl(record);
         if (visitUrl) window.open(visitUrl, "_blank", "noopener,noreferrer");
       }
@@ -7585,6 +7915,8 @@ function clearDetailHistory() {
 }
 
 function openRecordDetail(tableKey, recordId, options = {}) {
+  const row = data[tableKey]?.find((item) => item.id === recordId) ?? null;
+  if (!row || !canAccessRecord(tableKey, row)) return;
   if (!options.skipHistory) {
     state.detailHistory.push(snapshotCurrentView());
   }
@@ -7617,11 +7949,21 @@ function getActiveDetailRecord() {
   const table = getTableByKey(state.detailTableKey);
   if (!table) return null;
   const record = data[table.key].find((item) => item.id === state.detailRecordId) ?? null;
+  if (record && !canAccessRecord(table.key, record)) return null;
   return record ? { table, record } : null;
 }
 
 function renderHeroPanel() {
   captureDetailTreeScroll();
+  const activeNavItem = sidebarItems.find((item) => item.key === state.activeNav) ?? null;
+  if (activeNavItem && !canAccessNavItem(activeNavItem)) {
+    state.activeNav = "dashboard";
+    state.detailTableKey = null;
+    state.detailRecordId = null;
+    syncCurrentViewUrl(true);
+    renderSidebarNav();
+    renderMeta();
+  }
   if (state.activeNav === "assets" && state.assetsView === "map" && !state.detailRecordId) {
     captureAssetMapViewport();
   }
@@ -7806,11 +8148,11 @@ function renderHeroPanel() {
 function renderSelectors() {
   if (!el.projectSelect || !el.taskSelect) return;
 
-  el.projectSelect.innerHTML = data.projects
+  el.projectSelect.innerHTML = getAccessibleRows("projects")
     .map((project) => `<option value="${project.id}" ${state.projectId === project.id ? "selected" : ""}>${project.name}</option>`)
     .join("");
 
-  el.taskSelect.innerHTML = data.tasks
+  el.taskSelect.innerHTML = getAccessibleRows("tasks")
     .map((task) => `<option value="${task.id}" ${state.taskId === task.id ? "selected" : ""}>${task.title}</option>`)
     .join("");
 }
@@ -9189,9 +9531,18 @@ function renderField(field, record = null, currentTableKey = "") {
 
 function renderAdminUserForm(user = null) {
   const ventureOptions = ["All ventures", ...sortStringsAlpha(data.ventures.map((venture) => venture.name))];
-  const selectedTables = user?.table_access ?? [];
   const sortedRoles = sortStringsAlpha(accessRoles);
   const sortedStatuses = sortStringsAlpha(["Active", "Suspended"]);
+  const isFullAccessRole = user?.role === "Admin";
+  const selectedVentureScope = isFullAccessRole ? "All ventures" : user?.venture_scope ?? "All ventures";
+  const selectedProjects = isFullAccessRole ? [] : Array.isArray(user?.access_projects) ? user.access_projects : [];
+  const projectOptions = sortOptionsAlpha((data.projects ?? [])
+    .map((project) => ({
+      value: String(project.name ?? "").trim(),
+      label: String(project.name ?? "").trim(),
+      venture: String(project.venture ?? "").trim(),
+    }))
+    .filter((option) => option.value));
 
   return `
     <label class="form-field">
@@ -9208,10 +9559,13 @@ function renderAdminUserForm(user = null) {
     </label>
     <p id="admin-form-message" class="admin-form-message" aria-live="polite"></p>
     <label class="form-field">
-      <span>Role *</span>
-      <select name="user_role" required>
+      <span class="admin-role-label">Role * <span class="admin-full-access-badge ${isFullAccessRole ? "is-visible" : ""}" data-admin-full-access-badge>Full access</span></span>
+      <select name="user_role" data-user-role-select required>
         <option value="" ${!user?.role ? "selected" : ""}>Select role</option>
-        ${sortedRoles.map((roleKey) => `<option value="${escapeHtml(roleKey)}" ${user?.role === roleKey ? "selected" : ""}>${escapeHtml(roleKey)}</option>`).join("")}
+        ${sortedRoles.map((roleKey) => {
+          const roleLabel = roleKey === "Admin" ? "Admin (Full access)" : roleKey;
+          return `<option value="${escapeHtml(roleKey)}" ${user?.role === roleKey ? "selected" : ""}>${escapeHtml(roleLabel)}</option>`;
+        }).join("")}
       </select>
     </label>
     <label class="form-field">
@@ -9220,23 +9574,28 @@ function renderAdminUserForm(user = null) {
         ${sortedStatuses.map((status) => `<option value="${status}" ${user?.status === status ? "selected" : ""}>${status}</option>`).join("")}
       </select>
     </label>
-    <label class="form-field">
+    <label class="form-field" data-user-access-venture-field>
       <span>Venture scope</span>
-      <select name="user_venture_scope">
-        ${ventureOptions.map((option) => `<option value="${escapeHtml(option)}" ${(user?.venture_scope ?? "All ventures") === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+      <select name="user_venture_scope" data-user-access-venture>
+        ${ventureOptions.map((option) => `<option value="${escapeHtml(option)}" ${selectedVentureScope === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
       </select>
     </label>
-    <fieldset class="admin-access-fieldset">
-      <legend>Table access</legend>
-      <div class="admin-access-grid">
-        ${tables.map((table) => `
-          <label class="admin-access-option">
-            <input type="checkbox" name="user_table_access" value="${escapeHtml(table.key)}" ${selectedTables.includes(table.key) ? "checked" : ""} />
-            <span>${escapeHtml(table.title)}</span>
-          </label>
-        `).join("")}
-      </div>
-    </fieldset>
+    <div class="admin-access-scope-grid" data-user-access-section>
+      <label class="form-field admin-access-scope-field" data-user-access-project-field>
+        <span>Project access</span>
+        <details class="multi-select-dropdown">
+          <summary class="multi-select-summary" data-user-access-project-summary>Select projects</summary>
+          <div class="multi-select-menu">
+            ${projectOptions.map((option) => `
+              <label class="multi-select-option" data-user-access-project-option data-venture="${escapeHtml(option.venture)}">
+                <input type="checkbox" name="user_project_scope" value="${escapeHtml(option.value)}" ${selectedProjects.includes(option.value) ? "checked" : ""} />
+                <span>${escapeHtml(option.label)}${option.venture ? ` (${escapeHtml(option.venture)})` : ""}</span>
+              </label>
+            `).join("") || `<div class="admin-empty-state">No projects available.</div>`}
+          </div>
+        </details>
+      </label>
+    </div>
   `;
 }
 
@@ -9244,6 +9603,7 @@ function openForm(key, recordId = null) {
   const table = tables.find((item) => item.key === key);
   if (!table) return;
   const record = recordId ? data[key].find((item) => item.id === recordId) ?? null : null;
+  if (recordId && (!record || !canAccessRecord(key, record))) return;
   const entityLabel = table.singular || table.title;
   state.activeTable = key;
   state.modalEntity = "table";
@@ -9280,6 +9640,7 @@ function openAdminUserForm(userId = null) {
   el.modal.classList.add("open");
   syncBodyModalState();
   bindFormattedInputs();
+  bindAdminUserAccessScopes();
   setFormMessage("");
   setAdminFormMessage("");
 }
@@ -9388,6 +9749,76 @@ function bindPersonRelationFilters() {
 
     applyPersonRelationFilter(fieldEl);
   });
+}
+
+function updateAdminScopeSummary(selector, fallbackText) {
+  const field = el.form.querySelector(selector);
+  if (!field) return;
+  const checkedLabels = Array.from(field.querySelectorAll('input[type="checkbox"]:checked'))
+    .map((input) => input.closest("label")?.querySelector("span")?.textContent?.trim() ?? "")
+    .filter(Boolean);
+  const summary = field.querySelector(".multi-select-summary");
+  if (!summary) return;
+  summary.textContent = checkedLabels.length
+    ? checkedLabels.length === 1 ? checkedLabels[0] : `${checkedLabels.length} selected`
+    : fallbackText;
+}
+
+function bindAdminUserAccessScopes() {
+  const roleSelect = el.form.querySelector("[data-user-role-select]");
+  const ventureSelect = el.form.querySelector("[data-user-access-venture]");
+  if (!(ventureSelect instanceof HTMLSelectElement)) return;
+
+  const ventureField = el.form.querySelector("[data-user-access-venture-field]");
+  const accessSection = el.form.querySelector("[data-user-access-section]");
+  const projectField = el.form.querySelector("[data-user-access-project-field]");
+  if (!projectField) return;
+
+  const syncProjectOptions = () => {
+    const selectedVenture = String(ventureSelect.value ?? "All ventures").trim();
+
+    projectField.querySelectorAll("[data-user-access-project-option]").forEach((row) => {
+      const input = row.querySelector('input[type="checkbox"]');
+      const rowVenture = String(row.dataset.venture ?? "").trim();
+      const visible = selectedVenture === "All ventures"
+        || normalizeAccessMatchValue(rowVenture) === normalizeAccessMatchValue(selectedVenture);
+      row.hidden = !visible;
+      row.style.display = visible ? "" : "none";
+      if (!visible && input) input.checked = false;
+    });
+
+    updateAdminScopeSummary("[data-user-access-project-field]", "Select projects");
+  };
+
+  const syncFullAccessRole = () => {
+    const isFullAccessRole = roleSelect instanceof HTMLSelectElement && roleSelect.value === "Admin";
+    const fullAccessBadge = el.form.querySelector("[data-admin-full-access-badge]");
+    if (fullAccessBadge) fullAccessBadge.classList.toggle("is-visible", isFullAccessRole);
+
+    if (isFullAccessRole) {
+      ventureSelect.value = "All ventures";
+      projectField.querySelectorAll('input[name="user_project_scope"]').forEach((input) => {
+        input.checked = false;
+      });
+    }
+
+    [ventureField, accessSection].forEach((section) => {
+      if (!section) return;
+      section.hidden = isFullAccessRole;
+      section.style.display = isFullAccessRole ? "none" : "";
+    });
+
+    syncProjectOptions();
+  };
+
+  ventureSelect.addEventListener("change", syncProjectOptions);
+  if (roleSelect instanceof HTMLSelectElement) roleSelect.addEventListener("change", syncFullAccessRole);
+  projectField.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLInputElement)) return;
+    updateAdminScopeSummary("[data-user-access-project-field]", "Select projects");
+  });
+
+  syncFullAccessRole();
 }
 
 function syncBodyModalState() {
@@ -10059,8 +10490,14 @@ async function saveAdminUser() {
     role: String(formData.get("user_role") ?? "Employee").trim(),
     status: String(formData.get("user_status") ?? "Active").trim(),
     venture_scope: String(formData.get("user_venture_scope") ?? "All ventures").trim(),
-    table_access: formData.getAll("user_table_access").map((value) => String(value)),
+    access_projects: formData.getAll("user_project_scope").map((value) => String(value).trim()).filter(Boolean),
   };
+  if (payload.role === "Admin") {
+    payload.venture_scope = "All ventures";
+    payload.access_projects = [];
+  }
+  payload.access_ventures = payload.venture_scope === "All ventures" ? [] : [payload.venture_scope];
+  payload.table_access = buildAdminAccessTokens(payload);
 
   if (!payload.password) {
     setAdminFormMessage("Password is required.");
@@ -10163,7 +10600,7 @@ async function setRecordArchived(tableKey, recordId, archived) {
   const table = tables.find((item) => item.key === tableKey);
   if (!table) return false;
   const row = data[tableKey].find((item) => item.id === recordId);
-  if (!row) return false;
+  if (!row || !canAccessRecord(tableKey, row)) return false;
   if (isRecordArchived(row) === archived) return true;
 
   const label = row?.name || row?.title || row?.reference || table.singular || table.title;
@@ -10211,6 +10648,7 @@ async function deleteRecord(tableKey, recordId) {
   const table = tables.find((item) => item.key === tableKey);
   if (!table) return false;
   const row = data[tableKey].find((item) => item.id === recordId);
+  if (!row || !canAccessRecord(tableKey, row)) return false;
   const label = row?.name || row?.title || row?.reference || table.singular || table.title;
   const approved = await openDeleteConfirm(`Delete ${label}?`);
   if (!approved) return false;
@@ -10300,8 +10738,8 @@ function bindEvents() {
   if (el.taskSelect) {
     el.taskSelect.addEventListener("change", (event) => {
       state.taskId = event.target.value;
-      const task = data.tasks.find((item) => item.id === state.taskId);
-      const project = data.projects.find((item) => item.name === task?.project);
+      const task = getAccessibleRows("tasks").find((item) => item.id === state.taskId);
+      const project = getAccessibleRows("projects").find((item) => item.name === task?.project);
       if (project) state.projectId = project.id;
     });
   }
