@@ -1300,6 +1300,7 @@ function getAdminAccessScopeFromTokens(tokens = [], fallbackVentureScope = "All 
   const scope = {
     ventures: [],
     projects: [],
+    pages: [],
   };
 
   (Array.isArray(tokens) ? tokens : []).forEach((token) => {
@@ -1307,6 +1308,7 @@ function getAdminAccessScopeFromTokens(tokens = [], fallbackVentureScope = "All 
     if (!parsed?.value) return;
     if (parsed.kind === "venture") scope.ventures.push(parsed.value);
     if (parsed.kind === "project") scope.projects.push(parsed.value);
+    if (parsed.kind === "page") scope.pages.push(parsed.value);
   });
 
   const ventureScope = String(fallbackVentureScope ?? "All ventures").trim();
@@ -1317,6 +1319,7 @@ function getAdminAccessScopeFromTokens(tokens = [], fallbackVentureScope = "All 
   return {
     ventures: Array.from(new Set(scope.ventures)),
     projects: Array.from(new Set(scope.projects)),
+    pages: Array.from(new Set(scope.pages)),
   };
 }
 
@@ -1326,6 +1329,8 @@ function buildAdminAccessTokens(user = {}) {
       .map((value) => encodeAccessScopeToken("venture", value)),
     ...(Array.isArray(user.access_projects) ? user.access_projects : [])
       .map((value) => encodeAccessScopeToken("project", value)),
+    ...(Array.isArray(user.page_access) ? user.page_access : [])
+      .map((value) => encodeAccessScopeToken("page", value)),
   ].filter(Boolean);
 }
 
@@ -1342,6 +1347,7 @@ function mapAdminUserFromSupabase(row = {}) {
     venture_scope: String(row.venture_scope ?? "All ventures"),
     access_ventures: accessScope.ventures,
     access_projects: accessScope.projects,
+    page_access: accessScope.pages,
     table_access: tableAccess,
     createdAt: row.created_at ?? null,
     createdBy: String(row.created_by ?? "System"),
@@ -1782,6 +1788,8 @@ const remoteTableColumns = {
 };
 
 const ARCHIVABLE_TABLE_KEYS = new Set(["ventures", "projects"]);
+const PROJECT_PAGE_ACCESS_KEYS = ["documents", "assets", "events", "transactions"];
+const PROJECT_PAGE_ACCESS_SET = new Set(PROJECT_PAGE_ACCESS_KEYS);
 
 const sidebarItems = [
   { key: "dashboard", label: "Dashboard", kind: "dashboard", count: null },
@@ -2948,11 +2956,12 @@ function getTaskByTitle(taskTitle) {
 
 function getEffectiveUserAccessScope(user = state.currentUser) {
   if (!user || isAdminAccessUser(user)) {
-    return { restricted: false, ventures: [], projects: [] };
+    return { restricted: false, ventures: [], projects: [], pages: [] };
   }
 
   const ventures = new Set(Array.isArray(user.access_ventures) ? user.access_ventures : []);
   const projects = new Set(Array.isArray(user.access_projects) ? user.access_projects : []);
+  const pages = new Set(Array.isArray(user.page_access) ? user.page_access : []);
   const ventureScope = String(user.venture_scope ?? "All ventures").trim();
   if (ventureScope && ventureScope !== "All ventures") ventures.add(ventureScope);
 
@@ -2965,7 +2974,15 @@ function getEffectiveUserAccessScope(user = state.currentUser) {
     restricted: true,
     ventures: Array.from(ventures),
     projects: Array.from(projects),
+    pages: Array.from(pages),
   };
+}
+
+function canAccessProjectPage(tableKey, user = state.currentUser) {
+  if (!PROJECT_PAGE_ACCESS_SET.has(tableKey)) return true;
+  if (!user || isAdminAccessUser(user)) return true;
+  const pageAccess = Array.isArray(user.page_access) ? user.page_access : [];
+  return pageAccess.includes(tableKey);
 }
 
 function normalizeAccessMatchValue(value) {
@@ -3103,6 +3120,7 @@ function canAccessRecord(tableKey, row, user = state.currentUser) {
   if (!scope.restricted) return true;
 
   if (tableKey === ADMIN_USERS_TABLE || tableKey === "audit") return false;
+  if (!canAccessProjectPage(tableKey, user)) return false;
 
   const recordScope = getRecordScopeValues(tableKey, row);
   if (tableKey === "ventures") {
@@ -5359,6 +5377,7 @@ function syncViewportState() {
 function canAccessNavItem(item) {
   if (!item) return false;
   if (item.key === "admin" || item.key === "audit") return isAdminAccessUser();
+  if (item.kind === "table") return canAccessProjectPage(item.key);
   return true;
 }
 
@@ -5454,7 +5473,7 @@ function renderSidebarFooter() {
 
 function renderBoard() {
   if (!state.isAuthenticated) return;
-  el.board.innerHTML = tables.map((table) => `
+  el.board.innerHTML = tables.filter((table) => canAccessProjectPage(table.key)).map((table) => `
     <article class="table-tile" data-open-list="${table.key}">
       <div class="table-tile-head">
         <div class="table-count">${getAccessibleRows(table.key).length}</div>
@@ -8295,9 +8314,22 @@ function getFilteredAdminUsers() {
   const query = state.search.trim().toLowerCase();
   return userAccounts.filter((user) => {
     if (!query) return true;
-    return [user.name, user.email, user.role, user.password]
+    return [user.name, user.email, user.role, user.password, getAdminUserAccessSummary(user)]
       .some((value) => String(value ?? "").toLowerCase().includes(query));
   });
+}
+
+function getAdminUserAccessSummary(user = {}) {
+  if (isAdminAccessUser(user)) return "Full access";
+  const projectCount = Array.isArray(user.access_projects) ? user.access_projects.length : 0;
+  const pageLabels = (Array.isArray(user.page_access) ? user.page_access : [])
+    .map((key) => tables.find((table) => table.key === key)?.title ?? "")
+    .filter(Boolean);
+  const scope = String(user.venture_scope ?? "All ventures").trim() || "All ventures";
+  const parts = [scope];
+  parts.push(projectCount ? `${projectCount} project${projectCount === 1 ? "" : "s"}` : "No projects");
+  parts.push(pageLabels.length ? pageLabels.join(", ") : "No optional pages");
+  return parts.join(" / ");
 }
 
 function renderAdminUserRows(users = getFilteredAdminUsers()) {
@@ -8313,6 +8345,7 @@ function renderAdminUserRows(users = getFilteredAdminUsers()) {
         </td>
         <td>${escapeHtml(user.password)}</td>
         <td><span class="admin-user-role">${escapeHtml(user.role)}</span></td>
+        <td>${escapeHtml(getAdminUserAccessSummary(user))}</td>
         <td>${escapeHtml(user.createdBy || "System")}</td>
         <td>${escapeHtml(user.createdAt ? formatDashboardDate(user.createdAt, true) : "—")}</td>
         <td>
@@ -8338,7 +8371,7 @@ function renderAdminUserRows(users = getFilteredAdminUsers()) {
     `;
   }).join("") || `
     <tr>
-      <td colspan="7" class="admin-user-empty">No users found.</td>
+      <td colspan="8" class="admin-user-empty">No users found.</td>
     </tr>
   `;
 }
@@ -8375,6 +8408,7 @@ function renderAdminUsersWorkspace() {
               <th>Name</th>
               <th>Password</th>
               <th>Role</th>
+              <th>Access</th>
               <th>Added by</th>
               <th>Added at</th>
               <th>Actions</th>
@@ -9536,6 +9570,7 @@ function renderAdminUserForm(user = null) {
   const isFullAccessRole = user?.role === "Admin";
   const selectedVentureScope = isFullAccessRole ? "All ventures" : user?.venture_scope ?? "All ventures";
   const selectedProjects = isFullAccessRole ? [] : Array.isArray(user?.access_projects) ? user.access_projects : [];
+  const selectedPages = isFullAccessRole ? [] : Array.isArray(user?.page_access) ? user.page_access : [];
   const projectOptions = sortOptionsAlpha((data.projects ?? [])
     .map((project) => ({
       value: String(project.name ?? "").trim(),
@@ -9543,6 +9578,10 @@ function renderAdminUserForm(user = null) {
       venture: String(project.venture ?? "").trim(),
     }))
     .filter((option) => option.value));
+  const pageOptions = PROJECT_PAGE_ACCESS_KEYS.map((key) => ({
+    value: key,
+    label: tables.find((table) => table.key === key)?.title ?? titleCaseKey(key),
+  }));
 
   return `
     <label class="form-field">
@@ -9592,6 +9631,20 @@ function renderAdminUserForm(user = null) {
                 <span>${escapeHtml(option.label)}${option.venture ? ` (${escapeHtml(option.venture)})` : ""}</span>
               </label>
             `).join("") || `<div class="admin-empty-state">No projects available.</div>`}
+          </div>
+        </details>
+      </label>
+      <label class="form-field admin-access-scope-field" data-user-access-page-field>
+        <span>Page access</span>
+        <details class="multi-select-dropdown">
+          <summary class="multi-select-summary" data-user-access-page-summary>Select pages</summary>
+          <div class="multi-select-menu">
+            ${pageOptions.map((option) => `
+              <label class="multi-select-option" data-user-access-page-option>
+                <input type="checkbox" name="user_page_access" value="${escapeHtml(option.value)}" ${selectedPages.includes(option.value) ? "checked" : ""} />
+                <span>${escapeHtml(option.label)}</span>
+              </label>
+            `).join("")}
           </div>
         </details>
       </label>
@@ -9772,7 +9825,8 @@ function bindAdminUserAccessScopes() {
   const ventureField = el.form.querySelector("[data-user-access-venture-field]");
   const accessSection = el.form.querySelector("[data-user-access-section]");
   const projectField = el.form.querySelector("[data-user-access-project-field]");
-  if (!projectField) return;
+  const pageField = el.form.querySelector("[data-user-access-page-field]");
+  if (!projectField || !pageField) return;
 
   const syncProjectOptions = () => {
     const selectedVenture = String(ventureSelect.value ?? "All ventures").trim();
@@ -9800,6 +9854,9 @@ function bindAdminUserAccessScopes() {
       projectField.querySelectorAll('input[name="user_project_scope"]').forEach((input) => {
         input.checked = false;
       });
+      pageField.querySelectorAll('input[name="user_page_access"]').forEach((input) => {
+        input.checked = false;
+      });
     }
 
     [ventureField, accessSection].forEach((section) => {
@@ -9809,6 +9866,7 @@ function bindAdminUserAccessScopes() {
     });
 
     syncProjectOptions();
+    updateAdminScopeSummary("[data-user-access-page-field]", "Select pages");
   };
 
   ventureSelect.addEventListener("change", syncProjectOptions);
@@ -9816,6 +9874,10 @@ function bindAdminUserAccessScopes() {
   projectField.addEventListener("change", (event) => {
     if (!(event.target instanceof HTMLInputElement)) return;
     updateAdminScopeSummary("[data-user-access-project-field]", "Select projects");
+  });
+  pageField.addEventListener("change", (event) => {
+    if (!(event.target instanceof HTMLInputElement)) return;
+    updateAdminScopeSummary("[data-user-access-page-field]", "Select pages");
   });
 
   syncFullAccessRole();
@@ -10491,10 +10553,12 @@ async function saveAdminUser() {
     status: String(formData.get("user_status") ?? "Active").trim(),
     venture_scope: String(formData.get("user_venture_scope") ?? "All ventures").trim(),
     access_projects: formData.getAll("user_project_scope").map((value) => String(value).trim()).filter(Boolean),
+    page_access: formData.getAll("user_page_access").map((value) => String(value).trim()).filter((value) => PROJECT_PAGE_ACCESS_SET.has(value)),
   };
   if (payload.role === "Admin") {
     payload.venture_scope = "All ventures";
     payload.access_projects = [];
+    payload.page_access = [];
   }
   payload.access_ventures = payload.venture_scope === "All ventures" ? [] : [payload.venture_scope];
   payload.table_access = buildAdminAccessTokens(payload);
