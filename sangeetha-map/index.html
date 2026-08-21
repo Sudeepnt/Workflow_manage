@@ -26,6 +26,13 @@
         </label>
       </header>
 
+      <div class="map-tools" aria-label="Map search and location controls">
+        <div class="city-search-card" id="city-search-host"></div>
+        <button class="location-button" id="location-button" type="button" aria-label="Show my current location" title="My location">
+          <span class="location-glyph" aria-hidden="true"></span>
+        </button>
+      </div>
+
       <section class="sr-only" id="status-card" aria-live="polite">
         <p class="status-label" id="status-label">Connecting…</p>
         <p class="status-detail" id="status-detail">Loading map configuration and cached store locations.</p>

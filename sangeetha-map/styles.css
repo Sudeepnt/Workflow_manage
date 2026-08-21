@@ -44,10 +44,113 @@ body {
 .store-sheet {
   position: absolute;
   z-index: 2;
+}
+
+.map-topbar,
+.city-search-card,
+.location-button,
+.store-sheet {
   backdrop-filter: blur(18px);
   background: var(--panel);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
+}
+
+.map-tools {
+  position: absolute;
+  z-index: 3;
+  top: 84px;
+  left: 14px;
+  right: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.city-search-card,
+.location-button {
+  min-width: 0;
+  height: 46px;
+  border-radius: 16px;
+  pointer-events: auto;
+}
+
+.city-search-card {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.city-search-card gmp-place-autocomplete {
+  width: 100%;
+  color-scheme: light;
+}
+
+.city-search-fallback {
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--muted);
+  font: 600 0.82rem/1 "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+
+.location-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #1a73e8;
+  cursor: pointer;
+}
+
+.location-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.location-glyph {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.location-glyph::before,
+.location-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.location-glyph::before {
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.location-glyph::after {
+  width: 2px;
+  height: 28px;
+  border-radius: 0;
+  background: linear-gradient(currentColor 0 4px, transparent 4px 24px, currentColor 24px);
+}
+
+.location-button.is-locating .location-glyph {
+  animation: location-pulse 1s ease-in-out infinite;
+}
+
+@keyframes location-pulse {
+  50% {
+    transform: scale(0.82);
+    opacity: 0.58;
+  }
 }
 
 .map-topbar {
@@ -266,6 +369,17 @@ body {
   font-weight: 800;
 }
 
+.user-location-marker {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #1a73e8;
+  box-shadow:
+    0 2px 8px rgba(26, 115, 232, 0.42),
+    0 0 0 8px rgba(26, 115, 232, 0.15);
+}
+
 .sr-only {
   position: absolute !important;
   width: 1px !important;
@@ -294,6 +408,13 @@ body {
 
   .map-brand-logo {
     height: 24px;
+  }
+
+  .map-tools {
+    top: 96px;
+    left: 24px;
+    right: auto;
+    width: min(440px, calc(100vw - 48px));
   }
 
   .store-sheet {

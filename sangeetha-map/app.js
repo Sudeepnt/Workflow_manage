@@ -4,6 +4,11 @@ const state = {
   initialViewApplied: false,
   map: null,
   markers: [],
+  cityBoundaryLayer: null,
+  cityBoundaryRectangle: null,
+  locationAccuracyCircle: null,
+  locationMarker: null,
+  placeAutocomplete: null,
   selectedRegion: "",
   stores: [],
   selectedStoreId: null,
@@ -19,6 +24,8 @@ const INDIA_BOUNDS = {
 
 const el = {
   map: document.getElementById("map"),
+  citySearchHost: document.getElementById("city-search-host"),
+  locationButton: document.getElementById("location-button"),
   refreshButton: document.getElementById("refresh-button"),
   regionFilter: document.getElementById("region-filter"),
   statusCard: document.getElementById("status-card"),
@@ -109,6 +116,185 @@ async function ensureMap() {
     clickableIcons: false,
   });
   return state.map;
+}
+
+function clearCityBoundary() {
+  if (state.cityBoundaryLayer) {
+    state.cityBoundaryLayer.style = null;
+    state.cityBoundaryLayer = null;
+  }
+  if (state.cityBoundaryRectangle) {
+    state.cityBoundaryRectangle.setMap(null);
+    state.cityBoundaryRectangle = null;
+  }
+}
+
+function drawCityBoundary(place) {
+  clearCityBoundary();
+  const map = state.map;
+
+  try {
+    const localityLayer = map.getFeatureLayer("LOCALITY");
+    if (localityLayer.isAvailable) {
+      localityLayer.style = ({ feature }) => {
+        if (feature.placeId !== place.id) return null;
+        return {
+          strokeColor: "#d93025",
+          strokeOpacity: 1,
+          strokeWeight: 4,
+          fillColor: "#d93025",
+          fillOpacity: 0.06,
+        };
+      };
+      state.cityBoundaryLayer = localityLayer;
+      return;
+    }
+  } catch (error) {
+    console.warn("Google locality boundaries are unavailable for this map ID.", error);
+  }
+
+  if (place.viewport) {
+    state.cityBoundaryRectangle = new google.maps.Rectangle({
+      map,
+      bounds: place.viewport,
+      strokeColor: "#d93025",
+      strokeOpacity: 1,
+      strokeWeight: 3,
+      fillColor: "#d93025",
+      fillOpacity: 0.035,
+      clickable: false,
+    });
+  }
+}
+
+async function selectCity(placePrediction) {
+  const place = placePrediction.toPlace();
+  await place.fetchFields({
+    fields: ["id", "displayName", "formattedAddress", "location", "viewport", "types"],
+  });
+
+  if (!place.location) throw new Error("Google Maps did not return this city's location.");
+
+  showStoreSheet(null);
+  drawCityBoundary(place);
+  if (place.viewport) {
+    state.map.fitBounds(place.viewport, {
+      top: 150,
+      right: 36,
+      bottom: 48,
+      left: 36,
+    });
+  } else {
+    state.map.setCenter(place.location);
+    state.map.setZoom(12);
+  }
+  setStatus("City selected", place.formattedAddress || place.displayName || "Selected city");
+}
+
+async function setupCitySearch() {
+  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+  const autocomplete = new PlaceAutocompleteElement();
+  autocomplete.placeholder = "Search a city";
+  autocomplete.includedRegionCodes = ["in"];
+  autocomplete.includedPrimaryTypes = ["locality"];
+  autocomplete.setAttribute("aria-label", "Search for a city in India");
+  autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
+    try {
+      await selectCity(placePrediction);
+    } catch (error) {
+      setStatus("City unavailable", error.message);
+      showStatusCard(true);
+    }
+  });
+  el.citySearchHost.replaceChildren(autocomplete);
+  state.placeAutocomplete = autocomplete;
+}
+
+function showCitySearchFallback() {
+  const fallback = document.createElement("input");
+  fallback.className = "city-search-fallback";
+  fallback.type = "search";
+  fallback.placeholder = "City search unavailable";
+  fallback.setAttribute("aria-label", "City search unavailable");
+  fallback.disabled = true;
+  el.citySearchHost.replaceChildren(fallback);
+}
+
+function createLocationNode() {
+  const node = document.createElement("div");
+  node.className = "user-location-marker";
+  node.setAttribute("aria-label", "Your current location");
+  return node;
+}
+
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not supported by this browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 30000,
+    });
+  });
+}
+
+async function showCurrentLocation() {
+  el.locationButton.disabled = true;
+  el.locationButton.classList.add("is-locating");
+
+  try {
+    const map = await ensureMap();
+    const position = await getCurrentPosition();
+    const location = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude,
+    };
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+
+    clearCityBoundary();
+    if (!state.locationMarker) {
+      state.locationMarker = new AdvancedMarkerElement({
+        map,
+        position: location,
+        title: "Your current location",
+        content: createLocationNode(),
+        zIndex: 2_000_000,
+      });
+    } else {
+      state.locationMarker.position = location;
+      state.locationMarker.map = map;
+    }
+
+    if (state.locationAccuracyCircle) state.locationAccuracyCircle.setMap(null);
+    state.locationAccuracyCircle = new google.maps.Circle({
+      map,
+      center: location,
+      radius: Math.max(20, position.coords.accuracy || 0),
+      strokeColor: "#1a73e8",
+      strokeOpacity: 0.42,
+      strokeWeight: 1,
+      fillColor: "#1a73e8",
+      fillOpacity: 0.12,
+      clickable: false,
+    });
+
+    map.panTo(location);
+    map.setZoom(15);
+    showStoreSheet(null);
+    setStatus("Current location", "Showing your current position on the map.");
+  } catch (error) {
+    const message = error?.code === 1
+      ? "Allow location access in your browser to use this button."
+      : error?.message || "Your current location could not be found.";
+    setStatus("Location unavailable", message);
+    showStatusCard(true);
+  } finally {
+    el.locationButton.disabled = false;
+    el.locationButton.classList.remove("is-locating");
+  }
 }
 
 function clearMarkers() {
@@ -370,12 +556,14 @@ async function refreshStores() {
 
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
+  el.locationButton.addEventListener("click", showCurrentLocation);
   el.sheetClose.addEventListener("click", () => showStoreSheet(null));
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !el.storeSheet.hidden) showStoreSheet(null);
   });
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;
+    clearCityBoundary();
     try {
       await applyRegionFilter();
     } catch (error) {
@@ -391,6 +579,12 @@ async function init() {
   try {
     await loadRuntimeConfig();
     await ensureMap();
+    try {
+      await setupCitySearch();
+    } catch (error) {
+      console.warn("Google city autocomplete is unavailable.", error);
+      showCitySearchFallback();
+    }
     await loadStores();
   } catch (error) {
     setStatus("Map unavailable", error.message);
