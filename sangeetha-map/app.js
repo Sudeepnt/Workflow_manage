@@ -20,6 +20,7 @@ const state = {
   initialViewApplied: false,
   locationAccuracyCircle: null,
   locationMarker: null,
+  loading: false,
   map: null,
   markers: [],
   placeAutocomplete: null,
@@ -62,6 +63,7 @@ const el = {
   mapHelperCard: document.getElementById("map-helper-card"),
   mapHelperText: document.getElementById("map-helper-text"),
   mapHelperTitle: document.getElementById("map-helper-title"),
+  mapModebar: document.querySelector(".map-modebar"),
   proximityList: document.getElementById("proximity-list"),
   proximityClearButton: document.getElementById("proximity-clear-button"),
   proximityDoneButton: document.getElementById("proximity-done-button"),
@@ -114,8 +116,9 @@ function showStatusCard(visible) {
 }
 
 function setLoadingState(loading) {
-  el.refreshButton.disabled = loading;
-  el.regionFilter.disabled = loading;
+  state.loading = loading;
+  el.refreshButton.disabled = loading || state.areaMode;
+  el.regionFilter.disabled = loading || state.areaMode;
 }
 
 function setAreaButtonLabel(label) {
@@ -125,6 +128,20 @@ function setAreaButtonLabel(label) {
   } else {
     el.areaButton.textContent = label;
   }
+}
+
+function setAreaModeUi(active) {
+  document.body.classList.toggle("is-area-mode", active);
+  el.mapModebar.classList.toggle("has-clear", active);
+  el.areaClearButton.hidden = !active;
+  el.areaButton.classList.toggle("is-active", active);
+  el.areaButton.classList.toggle("is-primary", !active);
+  el.addStoreButton.disabled = active;
+  el.locationButton.disabled = active;
+  el.refreshButton.disabled = active || state.loading;
+  el.regionFilter.disabled = active || state.loading;
+  el.storeSearchInput.disabled = active;
+  setAreaButtonLabel(active ? "Done" : "Select Area");
 }
 
 function getSupabaseBrowserClient() {
@@ -220,11 +237,6 @@ async function ensureMap() {
     clickableIcons: false,
   });
 
-  state.map.addListener("click", () => {
-    if (!state.areaMode) return;
-    showStoreSheet(null);
-  });
-
   return state.map;
 }
 
@@ -303,6 +315,11 @@ function clearSearchResults() {
   el.storeSearchResults.replaceChildren();
 }
 
+function clearStoreSearch() {
+  el.storeSearchInput.value = "";
+  clearSearchResults();
+}
+
 function scoreStoreSearch(store, query) {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return null;
@@ -340,6 +357,7 @@ function getSearchMatches(query) {
 }
 
 async function focusStoreFromSearch(store) {
+  if (state.areaMode) return;
   clearSearchResults();
   el.storeSearchInput.value = `#${formatStoreNumber(store)} ${getStoreLocationName(store.name)}`;
   state.selectedRegion = "";
@@ -482,10 +500,7 @@ function clearAreaSelection() {
     state.areaClickListener = null;
   }
   state.areaMode = false;
-  el.areaClearButton.hidden = true;
-  el.areaButton.classList.remove("is-active");
-  el.areaButton.classList.add("is-primary");
-  setAreaButtonLabel("Select Area");
+  setAreaModeUi(false);
   setMapHelper("", "");
   updateMarkerStyles();
 }
@@ -818,6 +833,7 @@ function renderSavedAreas() {
       clickable: true,
     });
     polygon.addListener("click", () => {
+      if (state.areaMode) return;
       loadAreaDraft(area);
     });
     state.areaOverlays.push(polygon);
@@ -830,6 +846,7 @@ function renderSavedAreas() {
       zIndex: 2500,
     });
     badge.addEventListener("gmp-click", () => {
+      if (state.areaMode) return;
       loadAreaDraft(area);
     });
     state.areaBadgeMarkers.push(badge);
@@ -862,10 +879,9 @@ function loadAreaDraft(area) {
   state.areaDraftName = area.name;
   state.areaPath = area.points.map((point) => ({ ...point }));
   state.areaMode = true;
-  el.areaButton.classList.add("is-active");
-  el.areaButton.classList.remove("is-primary");
-  setAreaButtonLabel("Done");
-  el.areaClearButton.hidden = true;
+  showStoreSheet(null);
+  clearStoreSearch();
+  setAreaModeUi(true);
 
   state.areaPolygon = new google.maps.Polygon({
     map: state.map,
@@ -896,13 +912,12 @@ function startAreaSelection() {
   clearCityBoundary();
   clearProximitySelection();
   clearAreaSelection();
+  showStoreSheet(null);
+  clearStoreSearch();
   setStatus("Select area", "Tap the map to draw a custom territory.");
   setMapHelper("Select Area", "Tap up to 10 points on the map. Tap Done when the shape is ready.");
-  el.areaButton.classList.add("is-active");
-  el.areaButton.classList.remove("is-primary");
-  setAreaButtonLabel("Done");
-  el.areaClearButton.hidden = true;
   state.areaMode = true;
+  setAreaModeUi(true);
 
   state.areaClickListener = state.map.addListener("click", (event) => {
     if (!event.latLng || state.areaPath.length >= 10) {
@@ -1348,6 +1363,8 @@ function bindEvents() {
     if (event.key === "Escape") {
       if (state.areaMode) {
         clearAreaSelection();
+        renderSavedAreas();
+        return;
       }
       if (!el.storeSheet.hidden) {
         showStoreSheet(null);
@@ -1365,6 +1382,8 @@ function bindEvents() {
   el.areaClearButton.addEventListener("click", () => {
     clearAreaSelection();
     el.areaPanel.hidden = true;
+    showStoreSheet(null);
+    clearStoreSearch();
     renderSavedAreas();
   });
   el.sqftForm.addEventListener("submit", saveStoreSqft);
