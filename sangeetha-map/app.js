@@ -13,6 +13,7 @@ const state = {
   areaSaveInFlight: false,
   areaSelectedIds: new Set(),
   areaVertexMarkers: [],
+  activeAreaPointIndex: null,
   areas: [],
   savedAreasVisible: true,
   cityBoundaryLayer: null,
@@ -571,6 +572,7 @@ function clearSavedAreaOverlays() {
 
 function clearAreaSelection() {
   state.areaPath = [];
+  state.activeAreaPointIndex = null;
   state.areaSelectedIds = new Set();
   state.areaDraftId = null;
   state.areaDraftName = "";
@@ -895,15 +897,17 @@ function renderAreaVertexMarkers() {
     });
     dragMarker.addListener("drag", (event) => {
       if (!event.latLng) return;
+      state.activeAreaPointIndex = index;
       state.areaPath[index] = {
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
       };
       state.areaPolygon.setPaths(state.areaPath);
-      state.areaDeleteMarkers[index]?.setPosition(event.latLng);
+      state.areaDeleteMarkers[0]?.setPosition(event.latLng);
     });
     dragMarker.addListener("dragend", (event) => {
       if (!event.latLng) return;
+      state.activeAreaPointIndex = index;
       state.areaPath[index] = {
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
@@ -912,8 +916,13 @@ function renderAreaVertexMarkers() {
       applyAreaSelection();
       renderAreaVertexMarkers();
     });
+    dragMarker.addListener("click", () => {
+      state.activeAreaPointIndex = index;
+      renderAreaVertexMarkers();
+    });
     state.areaVertexMarkers.push(dragMarker);
 
+    if (state.activeAreaPointIndex !== index) return;
     const deleteMarker = new google.maps.Marker({
       map: state.map,
       position: point,
@@ -928,6 +937,9 @@ function renderAreaVertexMarkers() {
         return;
       }
       state.areaPath.splice(index, 1);
+      state.activeAreaPointIndex = state.areaPath.length
+        ? Math.min(index, state.areaPath.length - 1)
+        : null;
       state.areaPolygon.setPaths(state.areaPath);
       applyAreaSelection();
       renderAreaVertexMarkers();
@@ -1048,6 +1060,7 @@ function addAreaPoint(latLng) {
     lat: latLng.lat(),
     lng: latLng.lng(),
   });
+  state.activeAreaPointIndex = state.areaPath.length - 1;
 
   if (!state.areaPolygon) {
     state.areaPolygon = new google.maps.Polygon({
