@@ -218,6 +218,22 @@ async function renderMarkers(stores) {
   if (state.markers.length === 1) {
     map.setCenter(bounds.getCenter());
     map.setZoom(15);
+  } else if (state.markers.length <= 50) {
+    const span = bounds.toSpan();
+    const largestSpan = Math.max(span.lat(), span.lng());
+    const zoom = largestSpan <= 0.2
+      ? 11
+      : largestSpan <= 0.5
+        ? 10
+        : largestSpan <= 1.5
+          ? 9
+          : largestSpan <= 3
+            ? 8
+            : largestSpan <= 6
+              ? 7
+              : 6;
+    map.setCenter(bounds.getCenter());
+    map.setZoom(zoom);
   } else {
     map.fitBounds(bounds, 72);
   }
