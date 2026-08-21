@@ -57,7 +57,9 @@ before update on public.sangeetha_store_areas
 for each row
 execute function public.set_sangeetha_store_areas_updated_at();
 
-grant select, insert, update, delete on public.sangeetha_store_areas to anon, authenticated;
+revoke insert, update, delete on public.sangeetha_store_areas from anon, authenticated;
+revoke usage on sequence public.sangeetha_store_areas_number_seq from anon, authenticated;
+grant select on public.sangeetha_store_areas to anon, authenticated;
 
 alter table public.sangeetha_store_areas enable row level security;
 
@@ -69,23 +71,5 @@ to anon, authenticated
 using (true);
 
 drop policy if exists "Public can insert sangeetha store areas" on public.sangeetha_store_areas;
-create policy "Public can insert sangeetha store areas"
-on public.sangeetha_store_areas
-for insert
-to anon, authenticated
-with check (jsonb_array_length(points) between 3 and 10);
-
 drop policy if exists "Public can update sangeetha store areas" on public.sangeetha_store_areas;
-create policy "Public can update sangeetha store areas"
-on public.sangeetha_store_areas
-for update
-to anon, authenticated
-using (true)
-with check (jsonb_array_length(points) between 3 and 10);
-
 drop policy if exists "Public can delete sangeetha store areas" on public.sangeetha_store_areas;
-create policy "Public can delete sangeetha store areas"
-on public.sangeetha_store_areas
-for delete
-to anon, authenticated
-using (true);

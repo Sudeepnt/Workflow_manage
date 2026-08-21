@@ -61,6 +61,10 @@
           <i class="mode-icon" data-lucide="scan" aria-hidden="true"></i>
           <span>Select Area</span>
         </button>
+        <button class="mode-button saved-areas-toggle" id="saved-areas-toggle" type="button" aria-label="Hide saved areas" title="Hide saved areas">
+          <i class="mode-icon" data-lucide="eye" aria-hidden="true"></i>
+          <span>Areas</span>
+        </button>
         <button class="mode-button mode-button-clear" id="area-clear-button" type="button" aria-label="Clear area selection" title="Clear area" hidden>
           <i class="control-icon" data-lucide="x" aria-hidden="true"></i>
         </button>
@@ -193,7 +197,6 @@
       </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer@2.6.2/dist/index.min.js" defer></script>
     <script src="/sangeetha-map/app.js" defer></script>

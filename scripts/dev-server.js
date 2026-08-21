@@ -30,6 +30,9 @@ let localStores = catalogData.stores.map((store, index) => ({
 }));
 let nextLocalId = localStores.length + 1;
 let nextStoreNumber = localStores.length + 1;
+let localAreas = [];
+let nextAreaId = 1;
+let nextAreaNumber = 1;
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -161,6 +164,49 @@ const server = http.createServer((request, response) => {
         store_sqft: Number.isFinite(sqft) ? sqft : null,
       };
       sendJson(response, 200, { store: localStores[index] });
+    }).catch((error) => {
+      sendJson(response, 500, { error: error.message });
+    });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/sangeetha-store-areas") {
+    sendJson(response, 200, { areas: localAreas });
+    return;
+  }
+
+  if ((request.method === "POST" || request.method === "PATCH") && url.pathname === "/api/sangeetha-store-areas") {
+    readJsonBody(request).then((body) => {
+      const points = Array.isArray(body.points)
+        ? body.points.map((point) => ({ lat: Number(point.lat), lng: Number(point.lng) }))
+        : [];
+      if (points.length < 3 || points.length > 10) {
+        sendJson(response, 400, { error: "Area must have between 3 and 10 points." });
+        return;
+      }
+      const areaId = Number(body.id);
+      const existingIndex = localAreas.findIndex((area) => area.id === areaId);
+      const centroid = points.reduce((total, point) => ({
+        lat: total.lat + point.lat,
+        lng: total.lng + point.lng,
+      }), { lat: 0, lng: 0 });
+      const area = {
+        id: existingIndex >= 0 ? localAreas[existingIndex].id : nextAreaId++,
+        area_number: existingIndex >= 0 ? localAreas[existingIndex].area_number : nextAreaNumber++,
+        name: String(body.name || "").trim(),
+        points,
+        centroid_latitude: Number.isFinite(Number(body.centroidLatitude)) ? Number(body.centroidLatitude) : centroid.lat / points.length,
+        centroid_longitude: Number.isFinite(Number(body.centroidLongitude)) ? Number(body.centroidLongitude) : centroid.lng / points.length,
+        created_at: existingIndex >= 0 ? localAreas[existingIndex].created_at : new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      if (existingIndex >= 0) {
+        localAreas[existingIndex] = area;
+        sendJson(response, 200, { area });
+      } else {
+        localAreas = [...localAreas, area];
+        sendJson(response, 201, { area });
+      }
     }).catch((error) => {
       sendJson(response, 500, { error: error.message });
     });

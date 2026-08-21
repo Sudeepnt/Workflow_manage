@@ -9,9 +9,11 @@ const state = {
   areaOverlays: [],
   areaPath: [],
   areaPolygon: null,
+  areaSaveInFlight: false,
   areaSelectedIds: new Set(),
   areaVertexMarkers: [],
   areas: [],
+  savedAreasVisible: true,
   cityBoundaryLayer: null,
   cityBoundaryRectangle: null,
   clusterer: null,
@@ -74,6 +76,7 @@ const el = {
   radiusOptions: document.getElementById("radius-options"),
   refreshButton: document.getElementById("refresh-button"),
   regionFilter: document.getElementById("region-filter"),
+  savedAreasToggle: document.getElementById("saved-areas-toggle"),
   sheetAddress: document.getElementById("sheet-address"),
   sheetClose: document.getElementById("sheet-close"),
   sheetCoordinates: document.getElementById("sheet-coordinates"),
@@ -144,6 +147,10 @@ function setAreaButtonLabel(label) {
 }
 
 function refreshAreaButtonLabel() {
+  if (state.areaSaveInFlight) {
+    setAreaButtonLabel("Saving...");
+    return;
+  }
   if (state.areaMode) {
     setAreaButtonLabel(`Done (${state.areaPath.length}/10)`);
   } else {
@@ -179,31 +186,27 @@ function setAreaModeUi(active) {
   el.areaButton.classList.toggle("is-active", active);
   el.areaButton.classList.toggle("is-primary", !active);
   el.addStoreButton.disabled = active;
+  el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
   el.locationButton.disabled = active;
   el.refreshButton.disabled = active || state.loading;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
+  el.areaButton.disabled = state.areaSaveInFlight;
   refreshAreaButtonLabel();
   updateMapClearButtonVisibility();
 }
 
-function getSupabaseBrowserClient() {
-  if (state.supabaseClient) return state.supabaseClient;
-  const factory = globalThis.supabase?.createClient;
-  if (!factory || !state.config?.supabaseUrl || !state.config?.supabasePublishableKey) {
-    return null;
-  }
-  state.supabaseClient = factory(
-    state.config.supabaseUrl,
-    state.config.supabasePublishableKey,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    },
-  );
-  return state.supabaseClient;
+function updateSavedAreasToggle() {
+  const iconName = state.savedAreasVisible ? "eye" : "eye-off";
+  const label = state.savedAreasVisible ? "Areas" : "Hidden";
+  el.savedAreasToggle.setAttribute("aria-label", state.savedAreasVisible ? "Hide saved areas" : "Show saved areas");
+  el.savedAreasToggle.title = state.savedAreasVisible ? "Hide saved areas" : "Show saved areas";
+  el.savedAreasToggle.classList.toggle("is-muted", !state.savedAreasVisible);
+  el.savedAreasToggle.innerHTML = `
+    <i class="mode-icon" data-lucide="${iconName}" aria-hidden="true"></i>
+    <span>${label}</span>
+  `;
+  renderIconSet(el.savedAreasToggle);
 }
 
 function setSheetFeedback(message, isError = false) {
@@ -817,8 +820,11 @@ function applyAreaSelection() {
 
 function createAreaBadgeNode(areaNumber, active = false) {
   const node = document.createElement("div");
-  node.className = `area-badge${active ? " is-active" : ""}`;
-  node.textContent = String(areaNumber);
+  node.className = `area-center-pin${active ? " is-active" : ""}`;
+  node.innerHTML = `
+    <span class="area-center-pin-dot">${areaNumber}</span>
+    <span class="area-center-pin-label">Area</span>
+  `;
   return node;
 }
 
@@ -894,9 +900,13 @@ function renderAreaVertexMarkers() {
 
 function renderSavedAreas() {
   clearSavedAreaOverlays();
-  if (!state.map) return;
+  if (!state.map || !state.savedAreasVisible) return;
 
   state.areas.forEach((area) => {
+    const center = {
+      lat: Number(area.centroid_latitude) || getAreaCentroid(area.points).lat,
+      lng: Number(area.centroid_longitude) || getAreaCentroid(area.points).lng,
+    };
     const polygon = new google.maps.Polygon({
       map: state.map,
       paths: area.points,
@@ -915,7 +925,7 @@ function renderSavedAreas() {
 
     const badge = new google.maps.marker.AdvancedMarkerElement({
       map: state.map,
-      position: getAreaCentroid(area.points),
+      position: center,
       content: createAreaBadgeNode(area.area_number, state.areaDraftId === area.id),
       title: `Area ${area.area_number}: ${area.name}`,
       zIndex: 2500,
@@ -928,16 +938,19 @@ function renderSavedAreas() {
   });
 }
 
+function toggleSavedAreasVisibility() {
+  state.savedAreasVisible = !state.savedAreasVisible;
+  updateSavedAreasToggle();
+  renderSavedAreas();
+  updateMapClearButtonVisibility();
+}
+
 async function loadAreas() {
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) return;
-  const { data, error } = await supabase
-    .from("sangeetha_store_areas")
-    .select("id, area_number, name, points, centroid_latitude, centroid_longitude")
-    .order("area_number", { ascending: true });
-  if (error) throw error;
-  state.areas = (data ?? []).map((area) => ({
+  const payload = await fetchJson("/api/sangeetha-store-areas");
+  state.areas = (payload.areas ?? []).map((area) => ({
     ...area,
+    centroid_latitude: Number(area.centroid_latitude),
+    centroid_longitude: Number(area.centroid_longitude),
     points: Array.isArray(area.points) ? area.points.map((point) => ({
       lat: Number(point.lat),
       lng: Number(point.lng),
@@ -1048,16 +1061,11 @@ function startAreaSelection() {
 }
 
 async function saveAreaSelection() {
+  if (state.areaSaveInFlight) return;
   if (state.areaPath.length < 3 || !state.areaPolygon) {
     setStatus("Area incomplete", "Add at least three points to save this area.");
     showStatusCard(true);
     setMapHelper("Area Incomplete", "Add at least 3 points before tapping Done.");
-    return;
-  }
-
-  const supabase = getSupabaseBrowserClient();
-  if (!supabase) {
-    setMapHelper("Area Save Failed", "Supabase is unavailable in this browser session.");
     return;
   }
 
@@ -1069,26 +1077,37 @@ async function saveAreaSelection() {
     return;
   }
 
+  state.areaSaveInFlight = true;
+  setAreaModeUi(true);
   const centroid = getAreaCentroid(state.areaPath);
   const payload = {
+    id: state.areaDraftId,
     name: trimmedName,
-    points: state.areaPath,
-    centroid_latitude: centroid.lat,
-    centroid_longitude: centroid.lng,
+    points: state.areaPath.map((point) => ({ lat: point.lat, lng: point.lng })),
+    centroidLatitude: centroid.lat,
+    centroidLongitude: centroid.lng,
   };
 
-  const query = state.areaDraftId
-    ? supabase.from("sangeetha_store_areas").update(payload).eq("id", state.areaDraftId).select("*").single()
-    : supabase.from("sangeetha_store_areas").insert(payload).select("*").single();
-  const { error } = await query;
-  if (error) {
-    setMapHelper("Area Save Failed", error.message);
-    return;
-  }
+  try {
+    await fetchJson("/api/sangeetha-store-areas", {
+      method: state.areaDraftId ? "PATCH" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  await loadAreas();
-  clearAreaSelection();
-  setMapHelper("Area Saved", `"${trimmedName}" is now visible on the map.`);
+    state.savedAreasVisible = true;
+    updateSavedAreasToggle();
+    clearAreaSelection();
+    await loadAreas();
+    setMapHelper("Area Saved", `"${trimmedName}" is visible on the map.`);
+  } catch (error) {
+    setMapHelper("Area Save Failed", error.message || "Could not save this area.");
+  } finally {
+    state.areaSaveInFlight = false;
+    setAreaModeUi(state.areaMode);
+  }
 }
 
 function finishAreaSelection() {
@@ -1484,6 +1503,7 @@ function bindEvents() {
     }
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
+  el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
   el.areaButton.addEventListener("click", async () => {
     if (state.areaMode) {
       await finishAreaSelection();
@@ -1510,6 +1530,7 @@ async function init() {
   renderIconSet();
   window.addEventListener("load", () => renderIconSet(), { once: true });
   bindEvents();
+  updateSavedAreasToggle();
   setLoadingState(true);
 
   try {

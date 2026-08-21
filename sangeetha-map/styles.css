@@ -58,7 +58,7 @@ textarea {
 .area-draw-frame {
   position: absolute;
   z-index: 3;
-  inset: 148px 16px 104px;
+  inset: 86px 16px 104px;
   pointer-events: none;
   border: 2px dashed rgba(37, 99, 235, 0.5);
   border-radius: 24px;
@@ -356,7 +356,7 @@ textarea {
   right: 24px;
   bottom: 20px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr);
   gap: 14px;
   padding: 16px;
   border-radius: 24px;
@@ -367,7 +367,7 @@ textarea {
 }
 
 .map-modebar.has-clear {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 54px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr) 54px;
 }
 
 .mode-button-clear {
@@ -383,7 +383,7 @@ textarea {
 
 .is-area-mode .store-pin,
 .is-area-mode .store-cluster,
-.is-area-mode .area-badge {
+.is-area-mode .area-center-pin {
   pointer-events: none;
 }
 
@@ -421,22 +421,60 @@ textarea {
   text-overflow: ellipsis;
 }
 
-.area-badge {
-  display: grid;
-  place-items: center;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 10px;
+.area-center-pin {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 5px 10px 6px 8px;
   border-radius: 999px;
-  background: #111827;
-  color: #fff;
-  font-size: 0.84rem;
-  font-weight: 800;
-  box-shadow: 0 10px 22px rgba(17, 24, 39, 0.28);
+  background: rgba(255, 255, 255, 0.96);
+  color: #10213b;
+  border: 1px solid rgba(31, 94, 255, 0.22);
+  box-shadow: 0 12px 26px rgba(16, 33, 59, 0.18);
 }
 
-.area-badge.is-active {
+.area-center-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid rgba(31, 94, 255, 0.22);
+  border-bottom: 1px solid rgba(31, 94, 255, 0.22);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.area-center-pin.is-active {
+  border-color: rgba(31, 94, 255, 0.48);
+  box-shadow: 0 0 0 4px rgba(31, 94, 255, 0.12), 0 12px 26px rgba(16, 33, 59, 0.18);
+}
+
+.area-center-pin-dot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 6px;
+  border-radius: 999px;
   background: var(--blue);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.area-center-pin-label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #526079;
 }
 
 .area-delete-pin {
@@ -476,6 +514,12 @@ textarea {
 .mode-button.is-active {
   background: var(--blue);
   color: #fff;
+}
+
+.mode-button.is-muted {
+  color: #6f7b91;
+  background: rgba(244, 247, 252, 0.94);
+  border-color: rgba(16, 33, 59, 0.08);
 }
 
 .mode-icon {
@@ -948,30 +992,31 @@ textarea {
     left: 16px;
     right: 16px;
     bottom: 14px;
-    gap: 10px;
-    padding: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.78fr);
+    gap: 8px;
+    padding: 10px;
     border-radius: 22px;
   }
 
   .map-modebar.has-clear {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) 48px;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) minmax(0, 0.72fr) 44px;
   }
 
   .mode-button-clear {
-    min-width: 48px;
-    width: 48px;
+    min-width: 44px;
+    width: 44px;
   }
 
   .mode-button {
-    min-height: 54px;
-    gap: 8px;
-    padding: 0 10px;
-    font-size: 0.86rem;
+    min-height: 52px;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: 0.78rem;
   }
 
   .mode-icon {
-    flex-basis: 20px;
-    width: 20px;
-    height: 20px;
+    flex-basis: 18px;
+    width: 18px;
+    height: 18px;
   }
 }
