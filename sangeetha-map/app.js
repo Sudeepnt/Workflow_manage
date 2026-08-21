@@ -73,6 +73,8 @@ const el = {
   statusCard: document.getElementById("status-card"),
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
+  storeSearchInput: document.getElementById("store-search-input"),
+  storeSearchResults: document.getElementById("store-search-results"),
   storeSheet: document.getElementById("store-sheet"),
 };
 
@@ -244,56 +246,114 @@ function drawCityBoundary(place) {
   }
 }
 
-async function selectCity(placePrediction) {
-  const place = placePrediction.toPlace();
-  await place.fetchFields({
-    fields: ["id", "displayName", "formattedAddress", "location", "viewport", "types"],
-  });
-
-  if (!place.location) throw new Error("Google Maps did not return this city's location.");
-
-  drawCityBoundary(place);
-  if (place.viewport) {
-    state.map.fitBounds(place.viewport, {
-      top: 180,
-      right: 24,
-      bottom: 48,
-      left: 24,
-    });
-  } else {
-    state.map.setCenter(place.location);
-    state.map.setZoom(12);
-  }
-  setStatus("City selected", place.formattedAddress || place.displayName || "Selected city");
+function clearSearchResults() {
+  el.storeSearchResults.hidden = true;
+  el.storeSearchResults.replaceChildren();
 }
 
-async function setupCitySearch() {
-  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
-  const autocomplete = new PlaceAutocompleteElement();
-  autocomplete.placeholder = "Search a city";
-  autocomplete.includedRegionCodes = ["in"];
-  autocomplete.includedPrimaryTypes = ["locality"];
-  autocomplete.setAttribute("aria-label", "Search for a city in India");
-  autocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
-    try {
-      await selectCity(placePrediction);
-    } catch (error) {
-      setStatus("City unavailable", error.message);
-      showStatusCard(true);
+function scoreStoreSearch(store, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return null;
+
+  const storeNumber = formatStoreNumber(store);
+  const name = getStoreLocationName(store.name).toLowerCase();
+  const city = String(store.city || "").toLowerCase();
+  const stateName = String(store.state || "").toLowerCase();
+
+  if (/^\d+$/.test(normalizedQuery)) {
+    if (storeNumber.startsWith(normalizedQuery)) {
+      return Number(storeNumber === normalizedQuery ? 0 : 100 + Number(storeNumber));
     }
-  });
-  el.citySearchHost.replaceChildren(autocomplete);
-  state.placeAutocomplete = autocomplete;
+    return null;
+  }
+
+  if (name.startsWith(normalizedQuery)) return 1;
+  if (name.includes(normalizedQuery)) return 2;
+  if (city.startsWith(normalizedQuery)) return 3;
+  if (stateName.startsWith(normalizedQuery)) return 4;
+  if (`${storeNumber} ${name}`.includes(normalizedQuery)) return 5;
+  return null;
 }
 
-function showCitySearchFallback() {
-  const fallback = document.createElement("input");
-  fallback.className = "city-search-fallback";
-  fallback.type = "search";
-  fallback.placeholder = "City search unavailable";
-  fallback.setAttribute("aria-label", "City search unavailable");
-  fallback.disabled = true;
-  el.citySearchHost.replaceChildren(fallback);
+function getSearchMatches(query) {
+  return state.stores
+    .map((store) => ({ store, score: scoreStoreSearch(store, query) }))
+    .filter((entry) => entry.score !== null)
+    .sort((left, right) => {
+      if (left.score !== right.score) return left.score - right.score;
+      return Number(left.store.store_number) - Number(right.store.store_number);
+    })
+    .slice(0, 8)
+    .map((entry) => entry.store);
+}
+
+async function focusStoreFromSearch(store) {
+  clearSearchResults();
+  el.storeSearchInput.value = `#${formatStoreNumber(store)} ${getStoreLocationName(store.name)}`;
+  state.selectedRegion = "";
+  populateRegionFilter(state.stores);
+  await applyRegionFilter();
+
+  const coordinates = getStoreCoordinates(store);
+  state.map.panTo(coordinates);
+  state.map.setZoom(16);
+  showStoreSheet(store);
+  setStatus("Store selected", `Showing store #${formatStoreNumber(store)}.`);
+}
+
+function renderSearchResults(query) {
+  const matches = getSearchMatches(query);
+  el.storeSearchResults.replaceChildren();
+
+  if (!matches.length) {
+    clearSearchResults();
+    return;
+  }
+
+  matches.forEach((store) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "store-search-option";
+
+    const primary = document.createElement("span");
+    primary.className = "store-search-primary";
+    primary.textContent = `#${formatStoreNumber(store)} ${getStoreLocationName(store.name)}`;
+
+    const secondary = document.createElement("span");
+    secondary.className = "store-search-secondary";
+    secondary.textContent = [store.city, store.state].filter(Boolean).join(", ") || "Store";
+
+    option.append(primary, secondary);
+    option.addEventListener("click", async () => {
+      await focusStoreFromSearch(store);
+    });
+    el.storeSearchResults.appendChild(option);
+  });
+
+  el.storeSearchResults.hidden = false;
+}
+
+function setupStoreSearch() {
+  el.storeSearchInput.addEventListener("input", () => {
+    renderSearchResults(el.storeSearchInput.value);
+  });
+
+  el.storeSearchInput.addEventListener("focus", () => {
+    renderSearchResults(el.storeSearchInput.value);
+  });
+
+  el.storeSearchInput.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+    const matches = getSearchMatches(el.storeSearchInput.value);
+    if (!matches.length) return;
+    event.preventDefault();
+    await focusStoreFromSearch(matches[0]);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (el.citySearchHost.contains(event.target)) return;
+    clearSearchResults();
+  });
 }
 
 function createLocationNode() {
@@ -988,12 +1048,7 @@ async function init() {
   try {
     await loadRuntimeConfig();
     await ensureMap();
-    try {
-      await setupCitySearch();
-    } catch (error) {
-      console.warn("Google city autocomplete is unavailable.", error);
-      showCitySearchFallback();
-    }
+    setupStoreSearch();
     await loadStores();
   } catch (error) {
     setStatus("Map unavailable", error.message);
