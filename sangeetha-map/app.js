@@ -862,15 +862,21 @@ function createAreaBadgeNode(areaNumber, name, active = false) {
   return node;
 }
 
-function createAreaVertexNode(index) {
+function createAreaVertexNode() {
   const node = document.createElement("div");
   node.className = "area-vertex-control";
   node.innerHTML = `
     <span class="area-vertex-dot" aria-hidden="true"></span>
-    <button class="area-delete-pin" type="button" aria-label="Delete point ${index + 1}">
-      <i data-lucide="x" aria-hidden="true"></i>
-    </button>
   `;
+  return node;
+}
+
+function createAreaDeleteNode(index) {
+  const node = document.createElement("button");
+  node.type = "button";
+  node.className = "area-delete-pin";
+  node.setAttribute("aria-label", `Delete point ${index + 1}`);
+  node.innerHTML = '<i data-lucide="x" aria-hidden="true"></i>';
   renderIconSet(node);
   return node;
 }
@@ -878,7 +884,7 @@ function createAreaVertexNode(index) {
 function renderAreaVertexMarkers() {
   clearAreaVertexMarkers();
   state.areaPath.forEach((point, index) => {
-    const node = createAreaVertexNode(index);
+    const node = createAreaVertexNode();
     const dragMarker = new google.maps.marker.AdvancedMarkerElement({
       map: state.map,
       position: point,
@@ -908,7 +914,14 @@ function renderAreaVertexMarkers() {
     });
     state.areaVertexMarkers.push(dragMarker);
 
-    node.querySelector(".area-delete-pin")?.addEventListener("click", (event) => {
+    const deleteNode = createAreaDeleteNode(index);
+    const deleteMarker = new google.maps.marker.AdvancedMarkerElement({
+      map: state.map,
+      position: point,
+      content: deleteNode,
+      zIndex: 3002,
+    });
+    const deletePoint = (event) => {
       event.preventDefault();
       event.stopPropagation();
       if (state.areaPath.length <= 3) {
@@ -920,7 +933,18 @@ function renderAreaVertexMarkers() {
       applyAreaSelection();
       renderAreaVertexMarkers();
       refreshAreaButtonLabel();
+    };
+    deleteNode.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
     });
+    deleteNode.addEventListener("touchstart", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    }, { passive: false });
+    deleteNode.addEventListener("click", deletePoint);
+    deleteMarker.addEventListener("gmp-click", deletePoint);
+    state.areaDeleteMarkers.push(deleteMarker);
   });
 }
 

@@ -486,9 +486,8 @@ textarea {
 }
 
 .area-vertex-control {
-  position: relative;
-  width: 38px;
-  height: 38px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   cursor: grab;
@@ -505,9 +504,6 @@ textarea {
 }
 
 .area-delete-pin {
-  position: absolute;
-  right: -2px;
-  top: -2px;
   width: 22px;
   height: 22px;
   display: grid;
@@ -519,6 +515,8 @@ textarea {
   color: #d93025;
   box-shadow: 0 6px 16px rgba(16, 33, 59, 0.2);
   cursor: pointer;
+  transform: translate(20px, -20px);
+  touch-action: manipulation;
 }
 
 .area-delete-pin svg {
