@@ -1,0 +1,323 @@
+const state = {
+  config: null,
+  map: null,
+  markers: [],
+  stores: [],
+  selectedStoreId: null,
+  selectedMarkerId: null,
+};
+
+const el = {
+  map: document.getElementById("map"),
+  refreshButton: document.getElementById("refresh-button"),
+  locateButton: document.getElementById("locate-button"),
+  statusCard: document.getElementById("status-card"),
+  statusLabel: document.getElementById("status-label"),
+  statusDetail: document.getElementById("status-detail"),
+  storeCount: document.getElementById("store-count"),
+  storeSheet: document.getElementById("store-sheet"),
+  sheetTitle: document.getElementById("sheet-title"),
+  sheetAddress: document.getElementById("sheet-address"),
+  sheetLink: document.getElementById("sheet-link"),
+};
+
+let mapsLoaderPromise = null;
+
+function setStatus(label, detail = "") {
+  el.statusLabel.textContent = label;
+  el.statusDetail.textContent = detail;
+}
+
+function showStatusCard(visible) {
+  el.statusCard.hidden = !visible;
+}
+
+function setLoadingState(loading) {
+  el.refreshButton.disabled = loading;
+  el.locateButton.disabled = loading;
+}
+
+async function fetchJson(url, options) {
+  const response = await fetch(url, options);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(String(payload?.error ?? `Request failed with ${response.status}`));
+  }
+  return payload;
+}
+
+async function loadRuntimeConfig() {
+  const payload = await fetchJson("/api/runtime-config");
+  if (!payload.googleMapsApiKey) {
+    throw new Error("Google Maps API key is not configured.");
+  }
+  state.config = payload;
+  return payload;
+}
+
+function loadMapsScript() {
+  if (globalThis.google?.maps?.importLibrary) return Promise.resolve();
+  if (mapsLoaderPromise) return mapsLoaderPromise;
+
+  mapsLoaderPromise = new Promise((resolve, reject) => {
+    const callbackName = `initSangeethaMap${Date.now()}`;
+    const script = document.createElement("script");
+
+    globalThis[callbackName] = () => {
+      delete globalThis[callbackName];
+      resolve();
+    };
+
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => {
+      delete globalThis[callbackName];
+      mapsLoaderPromise = null;
+      reject(new Error("Google Maps JavaScript API failed to load."));
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return mapsLoaderPromise;
+}
+
+async function ensureMap() {
+  if (state.map) return state.map;
+  await loadMapsScript();
+  const { Map } = await google.maps.importLibrary("maps");
+
+  state.map = new Map(el.map, {
+    center: { lat: 12.9716, lng: 77.5946 },
+    zoom: 11,
+    mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
+    fullscreenControl: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    gestureHandling: "greedy",
+    clickableIcons: false,
+  });
+  return state.map;
+}
+
+function clearMarkers() {
+  state.markers.forEach((entry) => {
+    if (entry.marker) {
+      entry.marker.map = null;
+    }
+  });
+  state.markers = [];
+}
+
+function createPinNode(selected) {
+  const pin = document.createElement("div");
+  pin.className = `store-pin${selected ? " is-selected" : ""}`;
+  return pin;
+}
+
+function updateSelectedMarker() {
+  state.markers.forEach((entry) => {
+    const selected = entry.store.google_place_id === state.selectedMarkerId;
+    entry.marker.content = createPinNode(selected);
+  });
+}
+
+function getStoreLocationName(name) {
+  return String(name ?? "")
+    .replace(/^Sangeetha\s+(?:Mobiles|Gadgets)\s*-\s*/i, "")
+    .trim();
+}
+
+function showStoreSheet(store) {
+  if (!store) {
+    el.storeSheet.hidden = true;
+    state.selectedStoreId = null;
+    state.selectedMarkerId = null;
+    updateSelectedMarker();
+    return;
+  }
+
+  state.selectedStoreId = store.google_place_id;
+  state.selectedMarkerId = store.google_place_id;
+  el.sheetTitle.textContent = `Sangeetha Mobiles - ${getStoreLocationName(store.name)}`;
+  el.sheetAddress.textContent = store.address || "Address unavailable";
+  el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
+  el.storeSheet.hidden = false;
+  updateSelectedMarker();
+}
+
+async function renderMarkers(stores) {
+  const map = await ensureMap();
+  const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+  const bounds = new google.maps.LatLngBounds();
+
+  clearMarkers();
+
+  stores.forEach((store) => {
+    if (!Number.isFinite(Number(store.latitude)) || !Number.isFinite(Number(store.longitude))) return;
+
+    const marker = new AdvancedMarkerElement({
+      map,
+      position: {
+        lat: Number(store.latitude),
+        lng: Number(store.longitude),
+      },
+      title: store.name,
+      gmpClickable: true,
+      content: createPinNode(false),
+    });
+
+    marker.addEventListener("gmp-click", () => {
+      showStoreSheet(store);
+      map.panTo({
+        lat: Number(store.latitude),
+        lng: Number(store.longitude),
+      });
+    });
+
+    state.markers.push({ marker, store });
+    bounds.extend({
+      lat: Number(store.latitude),
+      lng: Number(store.longitude),
+    });
+  });
+
+  if (!state.markers.length) {
+    showStoreSheet(null);
+    setStatus("No stores found", "Run an import to populate the map.");
+    showStatusCard(true);
+    return;
+  }
+
+  if (state.markers.length === 1) {
+    map.setCenter(bounds.getCenter());
+    map.setZoom(15);
+  } else {
+    map.fitBounds(bounds, 72);
+  }
+}
+
+function formatSyncMeta(meta = {}) {
+  if (!meta.latestSyncAt) return "Not synced yet";
+  const stamp = new Date(meta.latestSyncAt);
+  if (Number.isNaN(stamp.getTime())) return "Sync time unavailable";
+  return `Last synced ${stamp.toLocaleDateString(undefined, { dateStyle: "medium" })}`;
+}
+
+async function loadStores() {
+  setStatus("Loading stores", "Reading cached store coordinates from Supabase.");
+  showStatusCard(true);
+
+  const payload = await fetchJson("/api/sangeetha-stores");
+  state.stores = Array.isArray(payload.stores) ? payload.stores : [];
+
+  el.storeCount.textContent = `${state.stores.length} ${state.stores.length === 1 ? "Store" : "Stores"}`;
+  setStatus(
+    "Store cache ready",
+    `${formatSyncMeta(payload.meta)}${payload.meta?.staleCount ? ` · ${payload.meta.staleCount} stale` : ""}`,
+  );
+
+  await renderMarkers(state.stores);
+  if (state.stores.length) {
+    showStatusCard(true);
+  }
+}
+
+async function refreshStores() {
+  setLoadingState(true);
+  setStatus("Refreshing stores", "Preparing the nationwide Google Places import.");
+  showStatusCard(true);
+
+  try {
+    let importedCount = 0;
+    let payload;
+
+    do {
+      payload = await fetchJson("/api/sangeetha-stores/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ batchSize: 20 }),
+      });
+      importedCount += Number(payload.importedCount) || 0;
+      const checked = Math.max(0, payload.totalCount - payload.remainingCount);
+      const percent = payload.totalCount
+        ? Math.min(100, Math.round((checked / payload.totalCount) * 100))
+        : 0;
+      setStatus(
+        "Refreshing stores",
+        `${checked} of ${payload.totalCount} current in Google Places (${percent}%).`,
+      );
+    } while (!payload.complete);
+
+    setStatus(
+      "Refresh complete",
+      importedCount
+        ? `${importedCount} stores refreshed from Google Places.`
+        : "All store data is already current.",
+    );
+    await loadStores();
+  } catch (error) {
+    setStatus("Refresh failed", error.message);
+    showStatusCard(true);
+  } finally {
+    setLoadingState(false);
+  }
+}
+
+function focusCurrentLocation() {
+  if (!navigator.geolocation || !state.map) {
+    setStatus("Location unavailable", "This browser cannot provide your current location.");
+    showStatusCard(true);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const center = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+      state.map.panTo(center);
+      state.map.setZoom(Math.max(state.map.getZoom() || 14, 14));
+      setStatus("Location centered", "Showing your current location on the map.");
+      showStatusCard(true);
+    },
+    (error) => {
+      setStatus("Location denied", error.message || "Unable to access current location.");
+      showStatusCard(true);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+    },
+  );
+}
+
+function bindEvents() {
+  el.refreshButton.addEventListener("click", refreshStores);
+  el.locateButton.addEventListener("click", focusCurrentLocation);
+}
+
+async function init() {
+  bindEvents();
+  setLoadingState(true);
+
+  try {
+    await loadRuntimeConfig();
+    await ensureMap();
+    await loadStores();
+  } catch (error) {
+    setStatus("Map unavailable", error.message);
+    showStatusCard(true);
+  } finally {
+    setLoadingState(false);
+  }
+}
+
+init().catch((error) => {
+  setStatus("Map unavailable", error.message || "Unexpected error");
+  showStatusCard(true);
+});

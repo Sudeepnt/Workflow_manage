@@ -1,0 +1,207 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f1ea;
+  --panel: rgba(255, 255, 255, 0.92);
+  --panel-border: rgba(16, 16, 16, 0.08);
+  --ink: #141414;
+  --muted: #5f5a52;
+  --accent: #0f0f0f;
+  --accent-contrast: #f8f6f0;
+  --shadow: 0 18px 50px rgba(20, 20, 20, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow: hidden;
+}
+
+.map-shell {
+  position: relative;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 34%),
+    linear-gradient(180deg, #f9f4ea 0%, #efe8dc 100%);
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.map-topbar,
+.map-status-card,
+.store-sheet {
+  position: absolute;
+  z-index: 2;
+  backdrop-filter: blur(18px);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+.map-topbar {
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 22px;
+}
+
+.map-eyebrow,
+.sheet-kicker,
+.status-label {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.map-title-group h1,
+.sheet-title {
+  margin: 4px 0 0;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.map-subtitle,
+.status-detail,
+.sheet-address {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.map-actions,
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.action-button,
+.icon-button,
+.sheet-link {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  text-decoration: none;
+  font: inherit;
+}
+
+.action-button,
+.sheet-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  cursor: pointer;
+}
+
+.icon-button {
+  width: 42px;
+  height: 42px;
+  background: rgba(20, 20, 20, 0.06);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.action-button:disabled,
+.icon-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.map-status-card {
+  top: 126px;
+  left: 14px;
+  right: 14px;
+  padding: 12px 14px;
+  border-radius: 18px;
+}
+
+.store-sheet {
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  padding: 14px 16px 18px;
+  border-radius: 24px;
+}
+
+.sheet-handle {
+  width: 44px;
+  height: 5px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.12);
+}
+
+.sheet-link {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.gm-style iframe + div {
+  border-radius: 16px;
+}
+
+.store-pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #111;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.26);
+}
+
+.store-pin.is-selected {
+  transform: scale(1.18);
+  background: #b91c1c;
+}
+
+@media (min-width: 900px) {
+  .map-topbar {
+    left: 24px;
+    right: auto;
+    width: min(480px, calc(100vw - 48px));
+    padding: 16px 18px;
+  }
+
+  .map-status-card {
+    top: 152px;
+    left: 24px;
+    right: auto;
+    width: min(420px, calc(100vw - 48px));
+  }
+
+  .store-sheet {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(360px, calc(100vw - 48px));
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+}

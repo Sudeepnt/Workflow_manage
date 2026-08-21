@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sangeetha Store Map</title>
+    <link rel="stylesheet" href="/sangeetha-map/styles.css" />
+  </head>
+  <body>
+    <main class="map-shell">
+      <div class="map-canvas" id="map" aria-label="Sangeetha store map"></div>
+
+      <header class="map-topbar">
+        <div class="map-title-group">
+          <p class="map-eyebrow">Prototype</p>
+          <h1>Sangeetha Store Map</h1>
+          <p class="map-subtitle" id="store-count">Loading stores...</p>
+        </div>
+        <div class="map-actions">
+          <button class="action-button" id="refresh-button" type="button">Import / Refresh</button>
+          <button class="icon-button" id="locate-button" type="button" aria-label="Use current location">◎</button>
+        </div>
+      </header>
+
+      <section class="map-status-card" id="status-card" aria-live="polite">
+        <p class="status-label" id="status-label">Connecting…</p>
+        <p class="status-detail" id="status-detail">Loading map configuration and cached store locations.</p>
+      </section>
+
+      <section class="store-sheet" id="store-sheet" aria-live="polite" hidden>
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <p class="sheet-kicker">Sangeetha Mobiles</p>
+        <h2 class="sheet-title" id="sheet-title">Store</h2>
+        <p class="sheet-address" id="sheet-address"></p>
+        <div class="sheet-actions">
+          <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">Open in Google Maps</a>
+        </div>
+      </section>
+    </main>
+
+    <script src="/sangeetha-map/app.js" defer></script>
+  </body>
+  </html>
