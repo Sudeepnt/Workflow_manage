@@ -130,10 +130,30 @@ function setAreaButtonLabel(label) {
   }
 }
 
+function hasClearableMapActions() {
+  return Boolean(
+    state.areaMode
+    || state.areaPath.length
+    || state.areaSelectedIds.size
+    || state.proximityCircle
+    || state.proximityRadiusKm
+    || state.proximityPendingRadiusKm
+    || state.proximityStoreIds.size
+    || state.cityBoundaryLayer
+    || state.cityBoundaryRectangle
+    || state.selectedMarkerId
+    || state.selectedStoreId,
+  );
+}
+
+function updateMapClearButtonVisibility() {
+  const visible = hasClearableMapActions();
+  el.mapModebar.classList.toggle("has-clear", visible);
+  el.areaClearButton.hidden = !visible;
+}
+
 function setAreaModeUi(active) {
   document.body.classList.toggle("is-area-mode", active);
-  el.mapModebar.classList.toggle("has-clear", active);
-  el.areaClearButton.hidden = !active;
   el.areaButton.classList.toggle("is-active", active);
   el.areaButton.classList.toggle("is-primary", !active);
   el.addStoreButton.disabled = active;
@@ -142,6 +162,7 @@ function setAreaModeUi(active) {
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
   setAreaButtonLabel(active ? "Done" : "Select Area");
+  updateMapClearButtonVisibility();
 }
 
 function getSupabaseBrowserClient() {
@@ -270,6 +291,7 @@ function clearCityBoundary() {
     state.cityBoundaryRectangle.setMap(null);
     state.cityBoundaryRectangle = null;
   }
+  updateMapClearButtonVisibility();
 }
 
 function drawCityBoundary(place) {
@@ -290,6 +312,7 @@ function drawCityBoundary(place) {
         };
       };
       state.cityBoundaryLayer = localityLayer;
+      updateMapClearButtonVisibility();
       return;
     }
   } catch (error) {
@@ -308,6 +331,7 @@ function drawCityBoundary(place) {
       clickable: false,
     });
   }
+  updateMapClearButtonVisibility();
 }
 
 function clearSearchResults() {
@@ -368,8 +392,10 @@ async function focusStoreFromSearch(store) {
   state.map.panTo(coordinates);
   state.map.setZoom(16);
   state.selectedMarkerId = getStoreKey(store);
+  state.selectedStoreId = null;
+  showSheetMode(null);
   updateMarkerStyles();
-  showStoreSheet(null);
+  updateMapClearButtonVisibility();
   setStatus("Store located", `Tap store #${formatStoreNumber(store)} on the map for details.`);
 }
 
@@ -458,6 +484,7 @@ function clearProximitySelection({ keepOrigin = false } = {}) {
     state.proximityCircle.setMap(null);
     state.proximityCircle = null;
   }
+  updateMapClearButtonVisibility();
 }
 
 function getAreaCentroid(points) {
@@ -692,6 +719,7 @@ function renderStoreSheet(store) {
   renderProximitySelection();
   showSheetMode("store");
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function renderLocationSheet() {
@@ -711,6 +739,7 @@ function renderLocationSheet() {
   renderProximitySelection();
   showSheetMode("location");
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function showStoreSheet(store) {
@@ -719,6 +748,7 @@ function showStoreSheet(store) {
     state.selectedMarkerId = null;
     showSheetMode(null);
     updateMarkerStyles();
+    updateMapClearButtonVisibility();
     return;
   }
   renderStoreSheet(store);
@@ -731,6 +761,7 @@ function showAddStoreSheet() {
   el.addStoreForm.reset();
   showSheetMode("add");
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function applyAreaSelection() {
@@ -1018,6 +1049,21 @@ function clearInteractiveSelections() {
   el.areaPanel.hidden = true;
   el.proximityPanel.hidden = state.sheetMode === "hidden";
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
+}
+
+function clearMapActions() {
+  clearCityBoundary();
+  clearProximitySelection();
+  clearAreaSelection();
+  state.selectedStoreId = null;
+  state.selectedMarkerId = null;
+  el.areaPanel.hidden = true;
+  showSheetMode(null);
+  clearStoreSearch();
+  renderSavedAreas();
+  updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function renderProximitySelection() {
@@ -1087,12 +1133,14 @@ function applyProximityRadius(radiusKm) {
 
   renderProximitySelection();
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function selectPendingProximityRadius(radiusKm) {
   if (!state.proximityOrigin) return;
   state.proximityPendingRadiusKm = radiusKm;
   renderProximitySelection();
+  updateMapClearButtonVisibility();
 }
 
 function commitProximityRadius() {
@@ -1103,12 +1151,18 @@ function commitProximityRadius() {
     return;
   }
   applyProximityRadius(radiusKm);
+  state.selectedStoreId = null;
+  state.selectedMarkerId = null;
+  showSheetMode(null);
+  updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 function clearCommittedProximityRadius() {
   clearProximitySelection({ keepOrigin: true });
   renderProximitySelection();
   updateMarkerStyles();
+  updateMapClearButtonVisibility();
 }
 
 async function renderMarkers(stores) {
@@ -1382,11 +1436,7 @@ function bindEvents() {
     startAreaSelection();
   });
   el.areaClearButton.addEventListener("click", () => {
-    clearAreaSelection();
-    el.areaPanel.hidden = true;
-    showStoreSheet(null);
-    clearStoreSearch();
-    renderSavedAreas();
+    clearMapActions();
   });
   el.sqftForm.addEventListener("submit", saveStoreSqft);
   el.addStoreForm.addEventListener("submit", createManualStore);
