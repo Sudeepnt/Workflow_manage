@@ -755,6 +755,10 @@ function renderLocationSheet() {
 }
 
 function showStoreSheet(store) {
+  if (state.areaMode && store) {
+    showSheetMode(null);
+    return;
+  }
   if (!store) {
     state.selectedStoreId = null;
     state.selectedMarkerId = null;
@@ -954,6 +958,49 @@ function loadAreaDraft(area) {
   renderSavedAreas();
 }
 
+function addAreaPoint(latLng) {
+  if (!state.areaMode || !latLng) return;
+  if (state.areaPath.length >= 10) {
+    setMapHelper("Point Limit", "You can use up to 10 points for one area.");
+    return;
+  }
+
+  state.areaPath.push({
+    lat: latLng.lat(),
+    lng: latLng.lng(),
+  });
+
+  if (!state.areaPolygon) {
+    state.areaPolygon = new google.maps.Polygon({
+      map: state.map,
+      paths: state.areaPath,
+      strokeColor: "#1f5eff",
+      strokeOpacity: 0.95,
+      strokeWeight: 3,
+      fillColor: "#1f5eff",
+      fillOpacity: 0.12,
+      draggable: true,
+    });
+    state.areaPolygon.addListener("dragend", () => {
+      const path = state.areaPolygon.getPath();
+      state.areaPath = Array.from({ length: path.getLength() }, (_, index) => {
+        const point = path.getAt(index);
+        return { lat: point.lat(), lng: point.lng() };
+      });
+      applyAreaSelection();
+      renderAreaVertexMarkers();
+    });
+  } else {
+    state.areaPolygon.setPaths(state.areaPath);
+  }
+
+  showSheetMode(null);
+  applyAreaSelection();
+  renderAreaVertexMarkers();
+  updateMarkerStyles();
+  setMapHelper("Select Area", `${state.areaPath.length} / 10 points added. Tap Done when ready.`);
+}
+
 function startAreaSelection() {
   clearCityBoundary();
   clearProximitySelection();
@@ -966,44 +1013,7 @@ function startAreaSelection() {
   setAreaModeUi(true);
 
   state.areaClickListener = state.map.addListener("click", (event) => {
-    if (!event.latLng || state.areaPath.length >= 10) {
-      if (state.areaPath.length >= 10) {
-        setMapHelper("Point Limit", "You can use up to 10 points for one area.");
-      }
-      return;
-    }
-    state.areaPath.push({
-      lat: event.latLng.lat(),
-      lng: event.latLng.lng(),
-    });
-
-    if (!state.areaPolygon) {
-      state.areaPolygon = new google.maps.Polygon({
-        map: state.map,
-        paths: state.areaPath,
-        strokeColor: "#1f5eff",
-        strokeOpacity: 0.95,
-        strokeWeight: 3,
-        fillColor: "#1f5eff",
-        fillOpacity: 0.12,
-        draggable: true,
-      });
-      state.areaPolygon.addListener("dragend", () => {
-        const path = state.areaPolygon.getPath();
-        state.areaPath = Array.from({ length: path.getLength() }, (_, index) => {
-          const point = path.getAt(index);
-          return { lat: point.lat(), lng: point.lng() };
-        });
-        applyAreaSelection();
-        renderAreaVertexMarkers();
-      });
-    } else {
-      state.areaPolygon.setPaths(state.areaPath);
-    }
-
-    applyAreaSelection();
-    renderAreaVertexMarkers();
-    setMapHelper("Select Area", `${state.areaPath.length} / 10 points added. Tap Done when ready.`);
+    addAreaPoint(event.latLng);
   });
 }
 
@@ -1198,7 +1208,10 @@ async function renderMarkers(stores) {
     });
 
     marker.addEventListener("gmp-click", () => {
-      if (state.areaMode) return;
+      if (state.areaMode) {
+        addAreaPoint(new google.maps.LatLng(latitude, longitude));
+        return;
+      }
       showStoreSheet(store);
       map.panTo({ lat: latitude, lng: longitude });
     });

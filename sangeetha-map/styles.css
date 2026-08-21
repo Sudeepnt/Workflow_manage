@@ -352,7 +352,7 @@ textarea {
 }
 
 .is-area-mode .store-pin,
-.is-area-mode .cluster-pin,
+.is-area-mode .store-cluster,
 .is-area-mode .area-badge {
   pointer-events: none;
 }
