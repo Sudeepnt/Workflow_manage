@@ -862,51 +862,51 @@ function createAreaBadgeNode(areaNumber, name, active = false) {
   return node;
 }
 
-function createAreaVertexNode() {
-  const node = document.createElement("div");
-  node.className = "area-vertex-control";
-  node.innerHTML = `
-    <span class="area-vertex-dot" aria-hidden="true"></span>
-  `;
-  return node;
-}
-
-function createAreaDeleteNode(index) {
-  const node = document.createElement("button");
-  node.type = "button";
-  node.className = "area-delete-pin";
-  node.setAttribute("aria-label", `Delete point ${index + 1}`);
-  node.innerHTML = '<i data-lucide="x" aria-hidden="true"></i>';
-  renderIconSet(node);
-  return node;
+function createAreaDeleteIcon() {
+  const svg = encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+      <circle cx="14" cy="14" r="12" fill="white" stroke="#ef4444" stroke-width="2"/>
+      <path d="M10 10l8 8M18 10l-8 8" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+  `.trim());
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${svg}`,
+    scaledSize: new google.maps.Size(28, 28),
+    anchor: new google.maps.Point(-10, 38),
+  };
 }
 
 function renderAreaVertexMarkers() {
   clearAreaVertexMarkers();
   state.areaPath.forEach((point, index) => {
-    const node = createAreaVertexNode();
-    const dragMarker = new google.maps.marker.AdvancedMarkerElement({
+    const dragMarker = new google.maps.Marker({
       map: state.map,
       position: point,
-      content: node,
-      gmpDraggable: true,
+      draggable: true,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: "#1f5eff",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 3,
+      },
       zIndex: 3000,
     });
-    dragMarker.addListener("drag", () => {
-      const position = dragMarker.position;
-      if (!position) return;
+    dragMarker.addListener("drag", (event) => {
+      if (!event.latLng) return;
       state.areaPath[index] = {
-        lat: typeof position.lat === "function" ? position.lat() : Number(position.lat),
-        lng: typeof position.lng === "function" ? position.lng() : Number(position.lng),
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
       };
       state.areaPolygon.setPaths(state.areaPath);
+      state.areaDeleteMarkers[index]?.setPosition(event.latLng);
     });
-    dragMarker.addListener("dragend", () => {
-      const position = dragMarker.position;
-      if (!position) return;
+    dragMarker.addListener("dragend", (event) => {
+      if (!event.latLng) return;
       state.areaPath[index] = {
-        lat: typeof position.lat === "function" ? position.lat() : Number(position.lat),
-        lng: typeof position.lng === "function" ? position.lng() : Number(position.lng),
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
       };
       state.areaPolygon.setPaths(state.areaPath);
       applyAreaSelection();
@@ -914,16 +914,15 @@ function renderAreaVertexMarkers() {
     });
     state.areaVertexMarkers.push(dragMarker);
 
-    const deleteNode = createAreaDeleteNode(index);
-    const deleteMarker = new google.maps.marker.AdvancedMarkerElement({
+    const deleteMarker = new google.maps.Marker({
       map: state.map,
       position: point,
-      content: deleteNode,
-      zIndex: 3002,
+      clickable: true,
+      icon: createAreaDeleteIcon(),
+      title: `Delete point ${index + 1}`,
+      zIndex: 3001,
     });
-    const deletePoint = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    deleteMarker.addListener("click", () => {
       if (state.areaPath.length <= 3) {
         setMapHelper("Minimum Reached", "An area needs at least 3 points.");
         return;
@@ -933,17 +932,7 @@ function renderAreaVertexMarkers() {
       applyAreaSelection();
       renderAreaVertexMarkers();
       refreshAreaButtonLabel();
-    };
-    deleteNode.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
     });
-    deleteNode.addEventListener("touchstart", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-    }, { passive: false });
-    deleteNode.addEventListener("click", deletePoint);
-    deleteMarker.addEventListener("gmp-click", deletePoint);
     state.areaDeleteMarkers.push(deleteMarker);
   });
 }
@@ -1029,7 +1018,7 @@ function loadAreaDraft(area) {
     strokeWeight: 3,
     fillColor: "#1f5eff",
     fillOpacity: 0.12,
-    draggable: true,
+    draggable: false,
   });
   state.areaPolygon.addListener("dragend", () => {
     const path = state.areaPolygon.getPath();
@@ -1069,7 +1058,7 @@ function addAreaPoint(latLng) {
       strokeWeight: 3,
       fillColor: "#1f5eff",
       fillOpacity: 0.12,
-      draggable: true,
+      draggable: false,
     });
     state.areaPolygon.addListener("dragend", () => {
       const path = state.areaPolygon.getPath();
