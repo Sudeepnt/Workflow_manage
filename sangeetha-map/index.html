@@ -15,17 +15,17 @@
           <p class="map-eyebrow">Prototype</p>
           <h1>Sangeetha Store Map</h1>
           <p class="map-subtitle" id="store-count">Loading stores...</p>
-          <label class="region-control">
-            <span>Region</span>
-            <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
-              <option value="">All India</option>
-            </select>
-          </label>
         </div>
         <div class="map-actions">
-          <button class="action-button" id="refresh-button" type="button">Import / Refresh</button>
+          <button class="action-button" id="refresh-button" type="button" aria-label="Import or refresh stores"><span class="desktop-action-prefix">Import / </span>Refresh</button>
           <button class="icon-button" id="locate-button" type="button" aria-label="Use current location">◎</button>
         </div>
+        <label class="region-control">
+          <span>Region</span>
+          <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
+            <option value="">All India</option>
+          </select>
+        </label>
       </header>
 
       <section class="map-status-card" id="status-card" aria-live="polite">
