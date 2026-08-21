@@ -25,6 +25,7 @@ const state = {
   placeAutocomplete: null,
   proximityCircle: null,
   proximityOrigin: null,
+  proximityPendingRadiusKm: null,
   proximityRadiusKm: null,
   proximityStoreIds: new Set(),
   selectedMarkerId: null,
@@ -62,6 +63,8 @@ const el = {
   mapHelperText: document.getElementById("map-helper-text"),
   mapHelperTitle: document.getElementById("map-helper-title"),
   proximityList: document.getElementById("proximity-list"),
+  proximityClearButton: document.getElementById("proximity-clear-button"),
+  proximityDoneButton: document.getElementById("proximity-done-button"),
   proximityOriginLabel: document.getElementById("proximity-origin-label"),
   proximityPanel: document.getElementById("proximity-panel"),
   proximitySummary: document.getElementById("proximity-summary"),
@@ -426,8 +429,9 @@ function getCurrentPosition() {
   });
 }
 
-function clearProximitySelection() {
-  state.proximityOrigin = null;
+function clearProximitySelection({ keepOrigin = false } = {}) {
+  if (!keepOrigin) state.proximityOrigin = null;
+  state.proximityPendingRadiusKm = null;
   state.proximityRadiusKm = null;
   state.proximityStoreIds = new Set();
   if (state.proximityCircle) {
@@ -533,6 +537,7 @@ async function showCurrentLocation() {
       latitude: location.lat,
       longitude: location.lng,
     };
+    clearProximitySelection({ keepOrigin: true });
     setStatus("Current location", "Pick a radius to find stores around you.");
     showSheetMode("location");
     renderProximitySelection();
@@ -614,9 +619,14 @@ function getRadiusOptions() {
 
 function setActiveRadiusChip() {
   getRadiusOptions().forEach((button) => {
+    const radiusKm = Number(button.dataset.radiusKm);
     button.classList.toggle(
       "is-active",
-      Number(button.dataset.radiusKm) === state.proximityRadiusKm,
+      radiusKm === state.proximityRadiusKm,
+    );
+    button.classList.toggle(
+      "is-pending",
+      radiusKm === state.proximityPendingRadiusKm && radiusKm !== state.proximityRadiusKm,
     );
   });
 }
@@ -652,6 +662,7 @@ function renderStoreSheet(store) {
     latitude: Number(store.latitude),
     longitude: Number(store.longitude),
   };
+  clearProximitySelection({ keepOrigin: true });
 
   el.sheetKicker.textContent = "Sangeetha Mobiles";
   el.sheetTitle.textContent = getStoreLocationName(store.name) || store.name || "Store";
@@ -994,7 +1005,7 @@ function clearInteractiveSelections() {
 
 function renderProximitySelection() {
   if (!state.proximityOrigin) {
-    el.proximitySummary.textContent = "Pick 1 km, 3 km, 5 km, or 10 km.";
+    el.proximitySummary.textContent = "Tap a store or use location first.";
     el.proximityOriginLabel.textContent = "";
     el.proximityList.replaceChildren();
     setActiveRadiusChip();
@@ -1002,8 +1013,15 @@ function renderProximitySelection() {
   }
 
   el.proximityOriginLabel.textContent = state.proximityOrigin.label;
+  if (state.proximityPendingRadiusKm && state.proximityPendingRadiusKm !== state.proximityRadiusKm) {
+    el.proximitySummary.textContent = `${state.proximityPendingRadiusKm} km selected. Tap Done to draw the radius.`;
+    el.proximityList.replaceChildren();
+    setActiveRadiusChip();
+    return;
+  }
+
   if (!state.proximityRadiusKm) {
-    el.proximitySummary.textContent = "Pick 1 km, 3 km, 5 km, or 10 km.";
+    el.proximitySummary.textContent = "Choose 1 km, 3 km, 5 km, or 10 km, then tap Done.";
     el.proximityList.replaceChildren();
     setActiveRadiusChip();
     return;
@@ -1017,6 +1035,7 @@ function renderProximitySelection() {
 
 function applyProximityRadius(radiusKm) {
   if (!state.proximityOrigin) return;
+  state.proximityPendingRadiusKm = radiusKm;
   state.proximityRadiusKm = radiusKm;
 
   const origin = new google.maps.LatLng(
@@ -1049,6 +1068,28 @@ function applyProximityRadius(radiusKm) {
     clickable: false,
   });
 
+  renderProximitySelection();
+  updateMarkerStyles();
+}
+
+function selectPendingProximityRadius(radiusKm) {
+  if (!state.proximityOrigin) return;
+  state.proximityPendingRadiusKm = radiusKm;
+  renderProximitySelection();
+}
+
+function commitProximityRadius() {
+  if (!state.proximityOrigin) return;
+  const radiusKm = state.proximityPendingRadiusKm || state.proximityRadiusKm;
+  if (!radiusKm) {
+    el.proximitySummary.textContent = "Choose a distance first, then tap Done.";
+    return;
+  }
+  applyProximityRadius(radiusKm);
+}
+
+function clearCommittedProximityRadius() {
+  clearProximitySelection({ keepOrigin: true });
   renderProximitySelection();
   updateMarkerStyles();
 }
@@ -1331,9 +1372,11 @@ function bindEvents() {
   getRadiusOptions().forEach((button) => {
     button.addEventListener("click", () => {
       if (!state.proximityOrigin) return;
-      applyProximityRadius(Number(button.dataset.radiusKm));
+      selectPendingProximityRadius(Number(button.dataset.radiusKm));
     });
   });
+  el.proximityDoneButton.addEventListener("click", commitProximityRadius);
+  el.proximityClearButton.addEventListener("click", clearCommittedProximityRadius);
 }
 
 async function init() {

@@ -614,6 +614,36 @@ textarea {
   color: #fff;
 }
 
+.radius-chip.is-pending {
+  background: #fff;
+  color: var(--blue);
+  border-color: rgba(31, 94, 255, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(31, 94, 255, 0.22);
+}
+
+.proximity-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.proximity-action-button {
+  min-height: 36px;
+  flex: 1;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: #27364f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.proximity-action-primary {
+  background: #0b111f;
+  color: #fff;
+  border-color: #0b111f;
+}
+
 .selection-list {
   margin: 10px 0 0;
   padding: 0;
