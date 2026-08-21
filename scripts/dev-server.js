@@ -94,6 +94,8 @@ const server = http.createServer((request, response) => {
     sendJson(response, 200, {
       googleMapsApiKey: getLocalMapsKey(),
       googleMapsMapId: "DEMO_MAP_ID",
+      supabaseUrl: "https://ejuynlfumyvriufxnzam.supabase.co",
+      supabasePublishableKey: "sb_publishable_gYutqzoCmYWw8YLQ6bEYLw_K0P_xH0G",
     });
     return;
   }

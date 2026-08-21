@@ -1,10 +1,17 @@
 const state = {
+  areaBadgeMarkers: [],
   activeStores: [],
   areaClickListener: null,
+  areaDeleteMarkers: [],
+  areaDraftId: null,
+  areaDraftName: "",
   areaMode: false,
+  areaOverlays: [],
   areaPath: [],
   areaPolygon: null,
   areaSelectedIds: new Set(),
+  areaVertexMarkers: [],
+  areas: [],
   cityBoundaryLayer: null,
   cityBoundaryRectangle: null,
   clusterer: null,
@@ -45,7 +52,6 @@ const el = {
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
   areaClearButton: document.getElementById("area-clear-button"),
-  areaFinishButton: document.getElementById("area-finish-button"),
   areaList: document.getElementById("area-list"),
   areaPanel: document.getElementById("area-panel"),
   areaSummary: document.getElementById("area-summary"),
@@ -107,6 +113,25 @@ function showStatusCard(visible) {
 function setLoadingState(loading) {
   el.refreshButton.disabled = loading;
   el.regionFilter.disabled = loading;
+}
+
+function getSupabaseBrowserClient() {
+  if (state.supabaseClient) return state.supabaseClient;
+  const factory = globalThis.supabase?.createClient;
+  if (!factory || !state.config?.supabaseUrl || !state.config?.supabasePublishableKey) {
+    return null;
+  }
+  state.supabaseClient = factory(
+    state.config.supabaseUrl,
+    state.config.supabasePublishableKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    },
+  );
+  return state.supabaseClient;
 }
 
 function setSheetFeedback(message, isError = false) {
@@ -402,9 +427,39 @@ function clearProximitySelection() {
   }
 }
 
+function getAreaCentroid(points) {
+  const validPoints = points.filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+  if (!validPoints.length) return { lat: 0, lng: 0 };
+  const total = validPoints.reduce((acc, point) => ({
+    lat: acc.lat + point.lat,
+    lng: acc.lng + point.lng,
+  }), { lat: 0, lng: 0 });
+  return {
+    lat: total.lat / validPoints.length,
+    lng: total.lng / validPoints.length,
+  };
+}
+
+function clearAreaVertexMarkers() {
+  state.areaVertexMarkers.forEach((marker) => marker.setMap(null));
+  state.areaDeleteMarkers.forEach((marker) => marker.map = null);
+  state.areaVertexMarkers = [];
+  state.areaDeleteMarkers = [];
+}
+
+function clearSavedAreaOverlays() {
+  state.areaOverlays.forEach((polygon) => polygon.setMap(null));
+  state.areaBadgeMarkers.forEach((marker) => marker.map = null);
+  state.areaOverlays = [];
+  state.areaBadgeMarkers = [];
+}
+
 function clearAreaSelection() {
   state.areaPath = [];
   state.areaSelectedIds = new Set();
+  state.areaDraftId = null;
+  state.areaDraftName = "";
+  clearAreaVertexMarkers();
   if (state.areaPolygon) {
     state.areaPolygon.setMap(null);
     state.areaPolygon = null;
@@ -414,9 +469,9 @@ function clearAreaSelection() {
     state.areaClickListener = null;
   }
   state.areaMode = false;
-  el.areaFinishButton.hidden = true;
   el.areaClearButton.hidden = true;
   el.areaButton.classList.remove("is-active");
+  el.areaButton.textContent = "Select Area";
   setMapHelper("", "");
   updateMarkerStyles();
 }
@@ -660,22 +715,179 @@ function applyAreaSelection() {
   updateMarkerStyles();
 }
 
+function createAreaBadgeNode(areaNumber, active = false) {
+  const node = document.createElement("div");
+  node.className = `area-badge${active ? " is-active" : ""}`;
+  node.textContent = String(areaNumber);
+  return node;
+}
+
+function createAreaDeleteNode() {
+  const node = document.createElement("button");
+  node.type = "button";
+  node.className = "area-delete-pin";
+  node.textContent = "×";
+  return node;
+}
+
+function renderAreaVertexMarkers() {
+  clearAreaVertexMarkers();
+  state.areaPath.forEach((point, index) => {
+    const dragMarker = new google.maps.Marker({
+      map: state.map,
+      position: point,
+      draggable: true,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: "#1f5eff",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 3,
+      },
+      zIndex: 3000,
+    });
+    dragMarker.addListener("drag", (event) => {
+      state.areaPath[index] = {
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
+      };
+      state.areaPolygon.setPaths(state.areaPath);
+      applyAreaSelection();
+      renderAreaVertexMarkers();
+    });
+    state.areaVertexMarkers.push(dragMarker);
+
+    const deleteMarker = new google.maps.marker.AdvancedMarkerElement({
+      map: state.map,
+      position: {
+        lat: point.lat + 0.02,
+        lng: point.lng,
+      },
+      content: createAreaDeleteNode(),
+      zIndex: 3001,
+    });
+    deleteMarker.content.addEventListener("click", () => {
+      if (state.areaPath.length <= 3) {
+        setMapHelper("Minimum Reached", "An area needs at least 3 points.");
+        return;
+      }
+      state.areaPath.splice(index, 1);
+      state.areaPolygon.setPaths(state.areaPath);
+      applyAreaSelection();
+      renderAreaVertexMarkers();
+    });
+    state.areaDeleteMarkers.push(deleteMarker);
+  });
+}
+
+function renderSavedAreas() {
+  clearSavedAreaOverlays();
+  if (!state.map) return;
+
+  state.areas.forEach((area) => {
+    const polygon = new google.maps.Polygon({
+      map: state.map,
+      paths: area.points,
+      strokeColor: "#1f5eff",
+      strokeOpacity: 0.78,
+      strokeWeight: 2,
+      fillColor: "#1f5eff",
+      fillOpacity: 0.08,
+      clickable: true,
+    });
+    polygon.addListener("click", () => {
+      loadAreaDraft(area);
+    });
+    state.areaOverlays.push(polygon);
+
+    const badge = new google.maps.marker.AdvancedMarkerElement({
+      map: state.map,
+      position: getAreaCentroid(area.points),
+      content: createAreaBadgeNode(area.area_number, state.areaDraftId === area.id),
+      title: `Area ${area.area_number}: ${area.name}`,
+      zIndex: 2500,
+    });
+    badge.addEventListener("gmp-click", () => {
+      loadAreaDraft(area);
+    });
+    state.areaBadgeMarkers.push(badge);
+  });
+}
+
+async function loadAreas() {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return;
+  const { data, error } = await supabase
+    .from("sangeetha_store_areas")
+    .select("id, area_number, name, points, centroid_latitude, centroid_longitude")
+    .order("area_number", { ascending: true });
+  if (error) throw error;
+  state.areas = (data ?? []).map((area) => ({
+    ...area,
+    points: Array.isArray(area.points) ? area.points.map((point) => ({
+      lat: Number(point.lat),
+      lng: Number(point.lng),
+    })) : [],
+  }));
+  renderSavedAreas();
+}
+
+function loadAreaDraft(area) {
+  clearCityBoundary();
+  clearProximitySelection();
+  clearAreaSelection();
+  state.areaDraftId = area.id;
+  state.areaDraftName = area.name;
+  state.areaPath = area.points.map((point) => ({ ...point }));
+  state.areaMode = true;
+  el.areaButton.classList.add("is-active");
+  el.areaButton.textContent = "Done";
+  el.areaClearButton.hidden = false;
+
+  state.areaPolygon = new google.maps.Polygon({
+    map: state.map,
+    paths: state.areaPath,
+    strokeColor: "#1f5eff",
+    strokeOpacity: 0.95,
+    strokeWeight: 3,
+    fillColor: "#1f5eff",
+    fillOpacity: 0.12,
+    draggable: true,
+  });
+  state.areaPolygon.addListener("dragend", () => {
+    const path = state.areaPolygon.getPath();
+    state.areaPath = Array.from({ length: path.getLength() }, (_, index) => {
+      const point = path.getAt(index);
+      return { lat: point.lat(), lng: point.lng() };
+    });
+    applyAreaSelection();
+    renderAreaVertexMarkers();
+  });
+  applyAreaSelection();
+  renderAreaVertexMarkers();
+  setMapHelper("Editing Area", `${area.name} (#${area.area_number}) is ready. Drag points, delete points, or tap Done.`);
+  renderSavedAreas();
+}
+
 function startAreaSelection() {
   clearCityBoundary();
   clearProximitySelection();
   clearAreaSelection();
-  setStatus("Select area", "Tap around the map to draw a polygon, then finish the area.");
-  setMapHelper(
-    "Select Area",
-    "Tap the map to drop boundary points. When the shape is ready, tap Finish Area.",
-  );
+  setStatus("Select area", "Tap the map to draw a custom territory.");
+  setMapHelper("Select Area", "Tap up to 10 points on the map. Tap Done when the shape is ready.");
   el.areaButton.classList.add("is-active");
-  el.areaFinishButton.hidden = false;
+  el.areaButton.textContent = "Done";
   el.areaClearButton.hidden = false;
   state.areaMode = true;
 
   state.areaClickListener = state.map.addListener("click", (event) => {
-    if (!event.latLng) return;
+    if (!event.latLng || state.areaPath.length >= 10) {
+      if (state.areaPath.length >= 10) {
+        setMapHelper("Point Limit", "You can use up to 10 points for one area.");
+      }
+      return;
+    }
     state.areaPath.push({
       lat: event.latLng.lat(),
       lng: event.latLng.lng(),
@@ -685,37 +897,78 @@ function startAreaSelection() {
       state.areaPolygon = new google.maps.Polygon({
         map: state.map,
         paths: state.areaPath,
-        strokeColor: "#d93025",
+        strokeColor: "#1f5eff",
         strokeOpacity: 0.95,
         strokeWeight: 3,
-        fillColor: "#d93025",
+        fillColor: "#1f5eff",
         fillOpacity: 0.12,
+        draggable: true,
+      });
+      state.areaPolygon.addListener("dragend", () => {
+        const path = state.areaPolygon.getPath();
+        state.areaPath = Array.from({ length: path.getLength() }, (_, index) => {
+          const point = path.getAt(index);
+          return { lat: point.lat(), lng: point.lng() };
+        });
+        applyAreaSelection();
+        renderAreaVertexMarkers();
       });
     } else {
       state.areaPolygon.setPaths(state.areaPath);
     }
 
-    setMapHelper(
-      "Select Area",
-      `${state.areaPath.length} point${state.areaPath.length === 1 ? "" : "s"} added. Tap more points or tap Finish Area.`,
-    );
+    applyAreaSelection();
+    renderAreaVertexMarkers();
+    setMapHelper("Select Area", `${state.areaPath.length} / 10 points added. Tap Done when ready.`);
   });
 }
 
-function finishAreaSelection() {
+async function saveAreaSelection() {
   if (state.areaPath.length < 3 || !state.areaPolygon) {
-    setStatus("Area incomplete", "Add at least three points to finish the selection.");
+    setStatus("Area incomplete", "Add at least three points to save this area.");
     showStatusCard(true);
-    setMapHelper("Area Incomplete", "Add at least 3 boundary points, then tap Finish Area.");
+    setMapHelper("Area Incomplete", "Add at least 3 points before tapping Done.");
     return;
   }
-  if (state.areaClickListener) {
-    google.maps.event.removeListener(state.areaClickListener);
-    state.areaClickListener = null;
+
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    setMapHelper("Area Save Failed", "Supabase is unavailable in this browser session.");
+    return;
   }
-  state.areaMode = false;
-  el.areaButton.classList.remove("is-active");
-  applyAreaSelection();
+
+  const name = window.prompt("Enter a mark name for this area", state.areaDraftName || "");
+  if (name == null) return;
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    setMapHelper("Name Required", "Give this area a mark name before saving.");
+    return;
+  }
+
+  const centroid = getAreaCentroid(state.areaPath);
+  const payload = {
+    name: trimmedName,
+    points: state.areaPath,
+    centroid_latitude: centroid.lat,
+    centroid_longitude: centroid.lng,
+  };
+
+  const query = state.areaDraftId
+    ? supabase.from("sangeetha_store_areas").update(payload).eq("id", state.areaDraftId).select("*").single()
+    : supabase.from("sangeetha_store_areas").insert(payload).select("*").single();
+  const { error } = await query;
+  if (error) {
+    setMapHelper("Area Save Failed", error.message);
+    return;
+  }
+
+  await loadAreas();
+  clearAreaSelection();
+  setMapHelper("Area Saved", `"${trimmedName}" is now visible on the map.`);
+}
+
+function finishAreaSelection() {
+  return saveAreaSelection();
 }
 
 function clearInteractiveSelections() {
@@ -1049,17 +1302,17 @@ function bindEvents() {
     }
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
-  el.areaButton.addEventListener("click", () => {
+  el.areaButton.addEventListener("click", async () => {
     if (state.areaMode) {
-      clearAreaSelection();
+      await finishAreaSelection();
       return;
     }
     startAreaSelection();
   });
-  el.areaFinishButton.addEventListener("click", finishAreaSelection);
   el.areaClearButton.addEventListener("click", () => {
     clearAreaSelection();
     el.areaPanel.hidden = true;
+    renderSavedAreas();
   });
   el.sqftForm.addEventListener("submit", saveStoreSqft);
   el.addStoreForm.addEventListener("submit", createManualStore);
@@ -1080,6 +1333,9 @@ async function init() {
     await ensureMap();
     setupStoreSearch();
     await loadStores();
+    await loadAreas().catch((error) => {
+      console.warn("Saved areas could not be loaded.", error);
+    });
   } catch (error) {
     setStatus("Map unavailable", error.message);
     showStatusCard(true);
