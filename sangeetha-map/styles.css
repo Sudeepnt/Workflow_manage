@@ -367,7 +367,7 @@ textarea {
 }
 
 .map-modebar.is-editing-area {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, 0.85fr) minmax(0, 0.78fr);
 }
 
 .map-modebar.has-clear {
@@ -375,7 +375,7 @@ textarea {
 }
 
 .map-modebar.is-editing-area.has-clear {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) minmax(0, 0.8fr) 54px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.02fr) minmax(0, 0.78fr) minmax(0, 0.7fr) 54px;
 }
 
 .mode-button-clear {
@@ -485,9 +485,31 @@ textarea {
   color: #526079;
 }
 
+.area-vertex-control {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.area-vertex-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1f5eff;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 18px rgba(31, 94, 255, 0.26);
+}
+
 .area-delete-pin {
-  width: 26px;
-  height: 26px;
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -495,13 +517,13 @@ textarea {
   border-radius: 999px;
   background: #ffffff;
   color: #d93025;
-  box-shadow: 0 8px 20px rgba(16, 33, 59, 0.18);
+  box-shadow: 0 6px 16px rgba(16, 33, 59, 0.2);
   cursor: pointer;
 }
 
 .area-delete-pin svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   stroke-width: 1.55;
 }
 
@@ -530,10 +552,17 @@ textarea {
   border-color: rgba(16, 33, 59, 0.08);
 }
 
-.area-boundary-delete {
+.area-boundary-delete,
+.area-boundary-rename {
   color: #c42b22;
   border-color: rgba(217, 48, 37, 0.2);
   background: rgba(254, 242, 242, 0.94);
+}
+
+.area-boundary-rename {
+  color: #2456c9;
+  border-color: rgba(37, 99, 235, 0.18);
+  background: rgba(238, 244, 255, 0.96);
 }
 
 .mode-icon {
@@ -1029,7 +1058,7 @@ textarea {
   }
 
   .map-modebar.is-editing-area {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.12fr) minmax(0, 0.74fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 0.74fr) minmax(0, 0.68fr);
   }
 
   .map-modebar.has-clear {
@@ -1037,7 +1066,13 @@ textarea {
   }
 
   .map-modebar.is-editing-area.has-clear {
-    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.06fr) minmax(0, 0.68fr) 44px;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.95fr) minmax(0, 0.68fr) minmax(0, 0.62fr) 40px;
+  }
+
+  .map-modebar.is-editing-area .mode-button {
+    padding: 0 5px;
+    font-size: 0.7rem;
+    gap: 4px;
   }
 
   .mode-button-clear {

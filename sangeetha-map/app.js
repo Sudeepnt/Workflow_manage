@@ -61,6 +61,7 @@ const el = {
   areaDrawFrame: document.getElementById("area-draw-frame"),
   areaList: document.getElementById("area-list"),
   areaPanel: document.getElementById("area-panel"),
+  areaRenameButton: document.getElementById("area-rename-button"),
   areaSummary: document.getElementById("area-summary"),
   citySearchHost: document.getElementById("city-search-host"),
   deleteStoreButton: document.getElementById("delete-store-button"),
@@ -193,9 +194,11 @@ function setAreaModeUi(active) {
   el.areaDrawFrame.hidden = !active;
   el.areaButton.classList.toggle("is-active", active);
   el.areaButton.classList.toggle("is-primary", !active);
+  el.areaRenameButton.hidden = !(active && state.areaDraftId);
   el.areaDeleteButton.hidden = !(active && state.areaDraftId);
   el.savedAreasToggle.hidden = active;
   el.addStoreButton.disabled = active;
+  el.areaRenameButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.areaDeleteButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
   el.locationButton.disabled = active;
@@ -547,7 +550,13 @@ function getAreaCentroid(points) {
 }
 
 function clearAreaVertexMarkers() {
-  state.areaVertexMarkers.forEach((marker) => marker.setMap(null));
+  state.areaVertexMarkers.forEach((marker) => {
+    if (typeof marker.setMap === "function") {
+      marker.setMap(null);
+    } else {
+      marker.map = null;
+    }
+  });
   state.areaDeleteMarkers.forEach((marker) => marker.map = null);
   state.areaVertexMarkers = [];
   state.areaDeleteMarkers = [];
@@ -853,11 +862,15 @@ function createAreaBadgeNode(areaNumber, name, active = false) {
   return node;
 }
 
-function createAreaDeleteNode() {
-  const node = document.createElement("button");
-  node.type = "button";
-  node.className = "area-delete-pin";
-  node.innerHTML = '<i data-lucide="x" aria-hidden="true"></i>';
+function createAreaVertexNode(index) {
+  const node = document.createElement("div");
+  node.className = "area-vertex-control";
+  node.innerHTML = `
+    <span class="area-vertex-dot" aria-hidden="true"></span>
+    <button class="area-delete-pin" type="button" aria-label="Delete point ${index + 1}">
+      <i data-lucide="x" aria-hidden="true"></i>
+    </button>
+  `;
   renderIconSet(node);
   return node;
 }
@@ -865,33 +878,29 @@ function createAreaDeleteNode() {
 function renderAreaVertexMarkers() {
   clearAreaVertexMarkers();
   state.areaPath.forEach((point, index) => {
-    const dragMarker = new google.maps.Marker({
+    const node = createAreaVertexNode(index);
+    const dragMarker = new google.maps.marker.AdvancedMarkerElement({
       map: state.map,
       position: point,
-      draggable: true,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 7,
-        fillColor: "#1f5eff",
-        fillOpacity: 1,
-        strokeColor: "#ffffff",
-        strokeWeight: 3,
-      },
+      content: node,
+      gmpDraggable: true,
       zIndex: 3000,
     });
-    dragMarker.addListener("drag", (event) => {
-      if (!event.latLng) return;
+    dragMarker.addListener("drag", () => {
+      const position = dragMarker.position;
+      if (!position) return;
       state.areaPath[index] = {
-        lat: event.latLng.lat(),
-        lng: event.latLng.lng(),
+        lat: typeof position.lat === "function" ? position.lat() : Number(position.lat),
+        lng: typeof position.lng === "function" ? position.lng() : Number(position.lng),
       };
       state.areaPolygon.setPaths(state.areaPath);
     });
-    dragMarker.addListener("dragend", (event) => {
-      if (!event.latLng) return;
+    dragMarker.addListener("dragend", () => {
+      const position = dragMarker.position;
+      if (!position) return;
       state.areaPath[index] = {
-        lat: event.latLng.lat(),
-        lng: event.latLng.lng(),
+        lat: typeof position.lat === "function" ? position.lat() : Number(position.lat),
+        lng: typeof position.lng === "function" ? position.lng() : Number(position.lng),
       };
       state.areaPolygon.setPaths(state.areaPath);
       applyAreaSelection();
@@ -899,16 +908,9 @@ function renderAreaVertexMarkers() {
     });
     state.areaVertexMarkers.push(dragMarker);
 
-    const deleteMarker = new google.maps.marker.AdvancedMarkerElement({
-      map: state.map,
-      position: {
-        lat: point.lat + 0.02,
-        lng: point.lng,
-      },
-      content: createAreaDeleteNode(),
-      zIndex: 3001,
-    });
-    deleteMarker.content.addEventListener("click", () => {
+    node.querySelector(".area-delete-pin")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (state.areaPath.length <= 3) {
         setMapHelper("Minimum Reached", "An area needs at least 3 points.");
         return;
@@ -919,7 +921,6 @@ function renderAreaVertexMarkers() {
       renderAreaVertexMarkers();
       refreshAreaButtonLabel();
     });
-    state.areaDeleteMarkers.push(deleteMarker);
   });
 }
 
@@ -1141,6 +1142,53 @@ async function saveAreaSelection() {
 
 function finishAreaSelection() {
   return saveAreaSelection();
+}
+
+async function renameAreaSelection() {
+  if (!state.areaDraftId || state.areaSaveInFlight || state.areaPromptOpen) return;
+  if (state.areaPath.length < 3 || !state.areaPolygon) {
+    setMapHelper("Area Incomplete", "Add at least 3 points before renaming.");
+    return;
+  }
+
+  state.areaPromptOpen = true;
+  setAreaModeUi(true);
+  const name = window.prompt("Rename this boundary", state.areaDraftName || "");
+  state.areaPromptOpen = false;
+  setAreaModeUi(true);
+  if (name == null) return;
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    setMapHelper("Name Required", "Give this boundary a name.");
+    return;
+  }
+
+  state.areaSaveInFlight = true;
+  setAreaModeUi(true);
+  const centroid = getAreaCentroid(state.areaPath);
+  try {
+    const payload = await fetchJson("/api/sangeetha-store-areas", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: state.areaDraftId,
+        name: trimmedName,
+        points: state.areaPath.map((point) => ({ lat: point.lat, lng: point.lng })),
+        centroidLatitude: centroid.lat,
+        centroidLongitude: centroid.lng,
+      }),
+    });
+    state.areaDraftName = payload.area?.name || trimmedName;
+    await loadAreas();
+    setMapHelper("Area Renamed", `"${state.areaDraftName}" updated.`);
+  } catch (error) {
+    setMapHelper("Rename Failed", error.message || "Could not rename this boundary.");
+  } finally {
+    state.areaSaveInFlight = false;
+    setAreaModeUi(state.areaMode);
+  }
 }
 
 async function deleteAreaSelection() {
@@ -1589,6 +1637,7 @@ function bindEvents() {
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
   el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
+  el.areaRenameButton.addEventListener("click", renameAreaSelection);
   el.areaDeleteButton.addEventListener("click", deleteAreaSelection);
   el.areaButton.addEventListener("click", async () => {
     if (state.areaMode) {
