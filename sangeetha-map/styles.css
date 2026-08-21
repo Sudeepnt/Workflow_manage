@@ -80,6 +80,10 @@ body {
   line-height: 1.1;
 }
 
+.map-title-group {
+  min-width: 0;
+}
+
 .map-subtitle,
 .status-detail,
 .sheet-address {
@@ -87,6 +91,31 @@ body {
   color: var(--muted);
   line-height: 1.45;
   font-size: 0.92rem;
+}
+
+.region-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.region-control select {
+  width: min(150px, 100%);
+  min-height: 34px;
+  padding: 0 30px 0 11px;
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--ink);
+  font: 600 0.78rem/1 "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .map-actions,
@@ -127,13 +156,14 @@ body {
 }
 
 .action-button:disabled,
-.icon-button:disabled {
+.icon-button:disabled,
+.region-control select:disabled {
   cursor: wait;
   opacity: 0.6;
 }
 
 .map-status-card {
-  top: 126px;
+  top: 148px;
   left: 14px;
   right: 14px;
   padding: 12px 14px;
@@ -188,7 +218,7 @@ body {
   }
 
   .map-status-card {
-    top: 152px;
+    top: 170px;
     left: 24px;
     right: auto;
     width: min(420px, calc(100vw - 48px));
@@ -203,5 +233,10 @@ body {
 
   .sheet-handle {
     display: none;
+  }
+
+
+  .region-control select {
+    width: 190px;
   }
 }

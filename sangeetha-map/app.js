@@ -3,6 +3,7 @@ const state = {
   clusterer: null,
   map: null,
   markers: [],
+  selectedRegion: "",
   stores: [],
   selectedStoreId: null,
   selectedMarkerId: null,
@@ -11,6 +12,7 @@ const state = {
 const el = {
   map: document.getElementById("map"),
   refreshButton: document.getElementById("refresh-button"),
+  regionFilter: document.getElementById("region-filter"),
   locateButton: document.getElementById("locate-button"),
   statusCard: document.getElementById("status-card"),
   statusLabel: document.getElementById("status-label"),
@@ -36,6 +38,7 @@ function showStatusCard(visible) {
 function setLoadingState(loading) {
   el.refreshButton.disabled = loading;
   el.locateButton.disabled = loading;
+  el.regionFilter.disabled = loading;
 }
 
 async function fetchJson(url, options) {
@@ -191,13 +194,17 @@ async function renderMarkers(stores) {
     });
   });
 
-  if (state.markers.length) {
+  if (state.markers.length > 50) {
     if (!globalThis.markerClusterer?.MarkerClusterer) {
       throw new Error("Google Maps marker clustering failed to load.");
     }
     state.clusterer = new markerClusterer.MarkerClusterer({
       map,
       markers: state.markers.map((entry) => entry.marker),
+    });
+  } else {
+    state.markers.forEach((entry) => {
+      entry.marker.map = map;
     });
   }
 
@@ -216,11 +223,38 @@ async function renderMarkers(stores) {
   }
 }
 
-function formatSyncMeta(meta = {}) {
-  if (!meta.latestSyncAt) return "Not synced yet";
-  const stamp = new Date(meta.latestSyncAt);
-  if (Number.isNaN(stamp.getTime())) return "Sync time unavailable";
-  return `Last synced ${stamp.toLocaleDateString(undefined, { dateStyle: "medium" })}`;
+function getRegionCounts(stores) {
+  return stores.reduce((counts, store) => {
+    const region = String(store.state || "Unknown").trim();
+    counts.set(region, (counts.get(region) || 0) + 1);
+    return counts;
+  }, new Map());
+}
+
+function populateRegionFilter(stores) {
+  const counts = getRegionCounts(stores);
+  const regions = [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+  el.regionFilter.replaceChildren(new Option(`All India (${stores.length})`, ""));
+  regions.forEach(([region, count]) => {
+    el.regionFilter.add(new Option(`${region} (${count})`, region));
+  });
+  el.regionFilter.value = state.selectedRegion;
+}
+
+async function applyRegionFilter() {
+  const region = state.selectedRegion;
+  const stores = region
+    ? state.stores.filter((store) => store.state === region)
+    : state.stores;
+  showStoreSheet(null);
+  el.storeCount.textContent = `${stores.length} ${stores.length === 1 ? "Store" : "Stores"}${region ? ` · ${region}` : ""}`;
+  setStatus(
+    region ? `${region} coverage` : "All India coverage",
+    region
+      ? `${stores.length} verified retail ${stores.length === 1 ? "location" : "locations"}. Warehouses are excluded.`
+      : "Numbered markers are clusters. Select a region to see its individual stores.",
+  );
+  await renderMarkers(stores);
 }
 
 async function loadStores() {
@@ -229,14 +263,8 @@ async function loadStores() {
 
   const payload = await fetchJson("/api/sangeetha-stores");
   state.stores = Array.isArray(payload.stores) ? payload.stores : [];
-
-  el.storeCount.textContent = `${state.stores.length} ${state.stores.length === 1 ? "Store" : "Stores"}`;
-  setStatus(
-    "Store cache ready",
-    `${formatSyncMeta(payload.meta)}${payload.meta?.staleCount ? ` · ${payload.meta.staleCount} stale` : ""}`,
-  );
-
-  await renderMarkers(state.stores);
+  populateRegionFilter(state.stores);
+  await applyRegionFilter();
   if (state.stores.length) {
     showStatusCard(true);
   }
@@ -317,6 +345,14 @@ function focusCurrentLocation() {
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
   el.locateButton.addEventListener("click", focusCurrentLocation);
+  el.regionFilter.addEventListener("change", async () => {
+    state.selectedRegion = el.regionFilter.value;
+    try {
+      await applyRegionFilter();
+    } catch (error) {
+      setStatus("Region unavailable", error.message);
+    }
+  });
 }
 
 async function init() {
