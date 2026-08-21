@@ -367,8 +367,10 @@ async function focusStoreFromSearch(store) {
   const coordinates = getStoreCoordinates(store);
   state.map.panTo(coordinates);
   state.map.setZoom(16);
-  showStoreSheet(store);
-  setStatus("Store selected", `Showing store #${formatStoreNumber(store)}.`);
+  state.selectedMarkerId = getStoreKey(store);
+  updateMarkerStyles();
+  showStoreSheet(null);
+  setStatus("Store located", `Tap store #${formatStoreNumber(store)} on the map for details.`);
 }
 
 function renderSearchResults(query) {
