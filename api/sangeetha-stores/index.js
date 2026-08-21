@@ -1,4 +1,4 @@
-const { getSupabaseAdminClient } = require("../_lib/supabase");
+const { getSupabaseReadClient } = require("../_lib/supabase");
 const { allowMethods, sendJson } = require("../_lib/http");
 
 const STALE_DAYS = 30;
@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const supabase = getSupabaseAdminClient();
+    const supabase = getSupabaseReadClient();
     const { data, error } = await supabase
       .from("sangeetha_stores")
       .select("id, google_place_id, name, latitude, longitude, address, business_status, google_maps_uri, google_synced_at, created_at, updated_at")

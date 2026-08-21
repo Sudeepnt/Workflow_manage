@@ -34,6 +34,7 @@ Required environment variables for Vercel:
 - `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (optional, `DEMO_MAP_ID` works for prototype use)
 - `GOOGLE_PLACES_API_KEY`
 - `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY` (optional public read override)
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 Database setup:
