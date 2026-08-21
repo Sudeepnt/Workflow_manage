@@ -79,8 +79,18 @@ body {
 }
 
 .map-topbar h1 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.map-brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  width: auto;
+  height: 20px;
 }
 
 .status-detail,
@@ -282,6 +292,10 @@ body {
     font-size: 1.2rem;
   }
 
+  .map-brand-logo {
+    height: 24px;
+  }
+
   .store-sheet {
     left: auto;
     right: 24px;
@@ -323,11 +337,12 @@ body {
   }
 
   .map-topbar h1 {
-    font-size: 0.84rem;
+    gap: 4px;
+    font-size: 0.7rem;
   }
 
-  .title-store-word {
-    display: none;
+  .map-brand-logo {
+    height: 16px;
   }
 
   .region-control select,
