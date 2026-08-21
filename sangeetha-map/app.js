@@ -239,10 +239,10 @@ async function renderMarkers(stores) {
 
   if (!state.selectedRegion) {
     map.fitBounds(INDIA_BOUNDS, {
-      top: 96,
-      right: 28,
-      bottom: 28,
-      left: 28,
+      top: 82,
+      right: 12,
+      bottom: 18,
+      left: 12,
     });
     return;
   }
