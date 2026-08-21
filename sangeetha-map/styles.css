@@ -63,7 +63,7 @@ body {
   left: 14px;
   right: 14px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 46px;
+  grid-template-columns: minmax(0, 1fr) 50px;
   gap: 8px;
   pointer-events: none;
 }
@@ -71,7 +71,7 @@ body {
 .city-search-card,
 .location-button {
   min-width: 0;
-  height: 46px;
+  height: 50px;
   border-radius: 16px;
   pointer-events: auto;
 }

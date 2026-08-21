@@ -286,9 +286,14 @@ async function showCurrentLocation() {
     showStoreSheet(null);
     setStatus("Current location", "Showing your current position on the map.");
   } catch (error) {
-    const message = error?.code === 1
-      ? "Allow location access in your browser to use this button."
-      : error?.message || "Your current location could not be found.";
+    const locationMessages = {
+      1: "Allow location access in your browser to use this button.",
+      2: "Your current location is temporarily unavailable.",
+      3: "Location took too long. Tap the button to try again.",
+    };
+    const message = locationMessages[error?.code]
+      || error?.message
+      || "Your current location could not be found.";
     setStatus("Location unavailable", message);
     showStatusCard(true);
   } finally {
