@@ -151,18 +151,30 @@ function setAreaButtonLabel(label) {
   }
 }
 
+function setAreaButtonIcon(iconName) {
+  const icon = el.areaButton.querySelector(".mode-icon");
+  if (!icon || icon.dataset.lucide === iconName) return;
+  icon.dataset.lucide = iconName;
+  icon.replaceChildren();
+  renderIconSet(el.areaButton);
+}
+
 function refreshAreaButtonLabel() {
   if (state.areaPromptOpen) {
+    setAreaButtonIcon("check");
     setAreaButtonLabel("Naming...");
     return;
   }
   if (state.areaSaveInFlight) {
+    setAreaButtonIcon("check");
     setAreaButtonLabel("Saving...");
     return;
   }
   if (state.areaMode) {
+    setAreaButtonIcon("check");
     setAreaButtonLabel(`Done (${state.areaPath.length}/10)`);
   } else {
+    setAreaButtonIcon("scan");
     setAreaButtonLabel("Select Area");
   }
 }

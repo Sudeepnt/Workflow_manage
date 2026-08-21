@@ -356,7 +356,7 @@ textarea {
   right: 24px;
   bottom: 20px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr);
+  grid-template-columns: 62px minmax(0, 1fr) minmax(0, 0.9fr);
   gap: 14px;
   padding: 16px;
   border-radius: 24px;
@@ -367,15 +367,15 @@ textarea {
 }
 
 .map-modebar.is-editing-area {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, 0.85fr) minmax(0, 0.78fr);
+  grid-template-columns: 56px minmax(0, 1fr) 56px 56px;
 }
 
 .map-modebar.has-clear {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr) 54px;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(0, 0.85fr) 54px;
 }
 
 .map-modebar.is-editing-area.has-clear {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.02fr) minmax(0, 0.78fr) minmax(0, 0.7fr) 54px;
+  grid-template-columns: 52px minmax(0, 1fr) 52px 52px 54px;
 }
 
 .mode-button-clear {
@@ -496,6 +496,26 @@ textarea {
   gap: 10px;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.add-store-mode,
+.area-boundary-rename,
+.area-boundary-delete {
+  padding: 0;
+}
+
+.add-store-mode .mode-text,
+.area-boundary-rename .mode-text,
+.area-boundary-delete .mode-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .mode-button.is-primary,
@@ -1009,22 +1029,22 @@ textarea {
     left: 16px;
     right: 16px;
     bottom: 14px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.78fr);
+    grid-template-columns: 52px minmax(0, 1fr) minmax(0, 0.78fr);
     gap: 8px;
     padding: 10px;
     border-radius: 22px;
   }
 
   .map-modebar.is-editing-area {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 0.74fr) minmax(0, 0.68fr);
+    grid-template-columns: 48px minmax(0, 1fr) 48px 48px;
   }
 
   .map-modebar.has-clear {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) minmax(0, 0.72fr) 44px;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 0.68fr) 44px;
   }
 
   .map-modebar.is-editing-area.has-clear {
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.95fr) minmax(0, 0.68fr) minmax(0, 0.62fr) 40px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px 40px;
   }
 
   .map-modebar.is-editing-area .mode-button {
