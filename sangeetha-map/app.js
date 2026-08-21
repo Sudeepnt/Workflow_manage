@@ -54,6 +54,7 @@ const el = {
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
   areaClearButton: document.getElementById("area-clear-button"),
+  areaDrawFrame: document.getElementById("area-draw-frame"),
   areaList: document.getElementById("area-list"),
   areaPanel: document.getElementById("area-panel"),
   areaSummary: document.getElementById("area-summary"),
@@ -166,6 +167,7 @@ function updateMapClearButtonVisibility() {
 
 function setAreaModeUi(active) {
   document.body.classList.toggle("is-area-mode", active);
+  el.areaDrawFrame.hidden = !active;
   el.areaButton.classList.toggle("is-active", active);
   el.areaButton.classList.toggle("is-primary", !active);
   el.addStoreButton.disabled = active;
@@ -791,8 +793,13 @@ function applyAreaSelection() {
   state.areaSelectedIds = new Set(selectedStores.map((store) => getStoreKey(store)));
   el.areaSummary.textContent = `${selectedStores.length} ${selectedStores.length === 1 ? "store" : "stores"} selected`;
   renderStoreList(el.areaList, selectedStores);
-  showSheetMode(state.sheetMode === "add" ? "add" : (state.selectedStoreId ? "store" : "location"));
-  el.areaPanel.hidden = !selectedStores.length;
+  if (!state.areaMode) {
+    showSheetMode(state.sheetMode === "add" ? "add" : (state.selectedStoreId ? "store" : "location"));
+    el.areaPanel.hidden = !selectedStores.length;
+  } else {
+    showSheetMode(null);
+    el.areaPanel.hidden = true;
+  }
   setMapHelper(
     "Area Selected",
     `${selectedStores.length} ${selectedStores.length === 1 ? "store is" : "stores are"} inside this boundary.`,
