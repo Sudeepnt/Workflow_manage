@@ -170,6 +170,29 @@ const server = http.createServer((request, response) => {
     return;
   }
 
+  if (request.method === "DELETE" && url.pathname === "/api/sangeetha-stores") {
+    readJsonBody(request).then((body) => {
+      const storeId = Number(body.id);
+      const index = localStores.findIndex((store) => store.id === storeId);
+      if (index === -1) {
+        sendJson(response, 404, { error: "Store not found" });
+        return;
+      }
+      if (localStores[index].data_source !== "manual") {
+        sendJson(response, 403, { error: "Only manually added stores can be deleted." });
+        return;
+      }
+      const [store] = localStores.splice(index, 1);
+      sendJson(response, 200, {
+        deletedStoreId: store.id,
+        deletedStoreNumber: store.store_number,
+      });
+    }).catch((error) => {
+      sendJson(response, 500, { error: error.message });
+    });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/sangeetha-store-areas") {
     sendJson(response, 200, { areas: localAreas });
     return;

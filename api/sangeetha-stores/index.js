@@ -163,6 +163,42 @@ async function updateStore(req, res) {
   });
 }
 
+async function deleteManualStore(req, res) {
+  const body = await readJsonBody(req);
+  const storeId = Number.parseInt(String(body.id ?? ""), 10);
+  if (!Number.isFinite(storeId) || storeId <= 0) {
+    throw new Error("Store id is required.");
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: store, error: readError } = await supabase
+    .from("sangeetha_stores")
+    .select("id, store_number, data_source")
+    .eq("id", storeId)
+    .single();
+
+  if (readError) throw readError;
+  if (store?.data_source !== "manual") {
+    sendJson(res, 403, {
+      error: "Only manually added stores can be deleted.",
+    });
+    return;
+  }
+
+  const { error } = await supabase
+    .from("sangeetha_stores")
+    .delete()
+    .eq("id", storeId)
+    .eq("data_source", "manual");
+
+  if (error) throw error;
+
+  sendJson(res, 200, {
+    deletedStoreId: storeId,
+    deletedStoreNumber: store.store_number,
+  });
+}
+
 module.exports = async function handler(req, res) {
   try {
     if (req.method === "GET") {
@@ -177,8 +213,12 @@ module.exports = async function handler(req, res) {
       await updateStore(req, res);
       return;
     }
+    if (req.method === "DELETE") {
+      await deleteManualStore(req, res);
+      return;
+    }
 
-    allowMethods(res, ["GET", "POST", "PATCH"]);
+    allowMethods(res, ["GET", "POST", "PATCH", "DELETE"]);
     sendJson(res, 405, { error: "Method not allowed" });
   } catch (error) {
     sendJson(res, 500, {

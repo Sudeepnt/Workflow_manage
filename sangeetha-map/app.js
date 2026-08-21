@@ -61,6 +61,7 @@ const el = {
   areaPanel: document.getElementById("area-panel"),
   areaSummary: document.getElementById("area-summary"),
   citySearchHost: document.getElementById("city-search-host"),
+  deleteStoreButton: document.getElementById("delete-store-button"),
   locationButton: document.getElementById("location-button"),
   map: document.getElementById("map"),
   mapHelperCard: document.getElementById("map-helper-card"),
@@ -740,6 +741,7 @@ function renderStoreSheet(store) {
   el.sheetCoordinates.textContent = `${Number(store.latitude).toFixed(6)}, ${Number(store.longitude).toFixed(6)}`;
   el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
   el.sqftInput.value = store.store_sqft ? String(store.store_sqft) : "";
+  el.deleteStoreButton.hidden = store.data_source !== "manual";
   setSheetFeedback("");
   renderProximitySelection();
   showSheetMode("store");
@@ -1478,6 +1480,36 @@ async function createManualStore(event) {
   }
 }
 
+async function deleteSelectedManualStore() {
+  if (!state.selectedStoreId) return;
+  const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
+  if (!store || store.data_source !== "manual") return;
+  if (!window.confirm(`Delete Store #${formatStoreNumber(store)}?`)) return;
+
+  el.deleteStoreButton.disabled = true;
+  try {
+    await fetchJson("/api/sangeetha-stores", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: store.id }),
+    });
+    state.stores = state.stores.filter((entry) => entry.id !== store.id);
+    state.filteredStores = state.filteredStores.filter((entry) => entry.id !== store.id);
+    state.selectedStoreId = null;
+    state.selectedMarkerId = null;
+    showSheetMode(null);
+    renderMarkers();
+    populateRegionFilter();
+    updateMapClearButtonVisibility();
+  } catch (error) {
+    setSheetFeedback(error.message, true);
+  } finally {
+    el.deleteStoreButton.disabled = false;
+  }
+}
+
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
   el.locationButton.addEventListener("click", showCurrentLocation);
@@ -1516,6 +1548,7 @@ function bindEvents() {
   });
   el.sqftForm.addEventListener("submit", saveStoreSqft);
   el.addStoreForm.addEventListener("submit", createManualStore);
+  el.deleteStoreButton.addEventListener("click", deleteSelectedManualStore);
   getRadiusOptions().forEach((button) => {
     button.addEventListener("click", () => {
       if (!state.proximityOrigin) return;
