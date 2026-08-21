@@ -259,16 +259,19 @@ function populateRegionFilter(stores) {
 
 async function applyRegionFilter() {
   const region = state.selectedRegion;
+  const regionCount = getRegionCounts(state.stores).size;
   const stores = region
     ? state.stores.filter((store) => store.state === region)
     : state.stores;
   showStoreSheet(null);
-  el.storeCount.textContent = `${stores.length} ${stores.length === 1 ? "Store" : "Stores"}${region ? ` · ${region}` : ""}`;
+  el.storeCount.textContent = region
+    ? `${stores.length} ${stores.length === 1 ? "Store" : "Stores"} · ${region}`
+    : `${stores.length} Stores · ${regionCount} Regions`;
   setStatus(
-    region ? `${region} coverage` : "All India coverage",
+    region ? `${region} coverage` : "Verified retail coverage",
     region
       ? `${stores.length} verified retail ${stores.length === 1 ? "location" : "locations"}. Warehouses are excluded.`
-      : "Numbered markers are clusters. Select a region to see its individual stores.",
+      : `${regionCount} states or territories have verified stores. Warehouses are excluded.`,
   );
   await renderMarkers(stores);
 }
