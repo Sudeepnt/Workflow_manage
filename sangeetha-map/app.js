@@ -22,6 +22,11 @@ const INDIA_BOUNDS = {
   east: 97.6,
 };
 
+const CLOSED_BUSINESS_STATUSES = new Set([
+  "CLOSED_TEMPORARILY",
+  "CLOSED_PERMANENTLY",
+]);
+
 const el = {
   map: document.getElementById("map"),
   citySearchHost: document.getElementById("city-search-host"),
@@ -474,6 +479,13 @@ function getRegionCounts(stores) {
   }, new Map());
 }
 
+function isCurrentLocatorStore(store) {
+  return (
+    store.verification_status !== "google_directory_only"
+    && !CLOSED_BUSINESS_STATUSES.has(store.business_status)
+  );
+}
+
 function populateRegionFilter(stores) {
   const counts = getRegionCounts(stores);
   const regions = [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
@@ -491,10 +503,10 @@ async function applyRegionFilter() {
     : state.stores;
   showStoreSheet(null);
   setStatus(
-    region ? `${region} coverage` : "Verified retail coverage",
+    region ? `${region} official locations` : "Official locator coverage",
     region
-      ? `${stores.length} verified retail ${stores.length === 1 ? "location" : "locations"}. Warehouses are excluded.`
-      : `${getRegionCounts(state.stores).size} states or territories have verified stores. Warehouses are excluded.`,
+      ? `${stores.length} official locator ${stores.length === 1 ? "location" : "locations"}. Closed Google listings and warehouses are excluded.`
+      : `${state.stores.length} locations listed by Sangeetha across ${getRegionCounts(state.stores).size} states or territories.`,
   );
   await renderMarkers(stores);
 }
@@ -504,7 +516,8 @@ async function loadStores() {
   showStatusCard(true);
 
   const payload = await fetchJson("/api/sangeetha-stores");
-  state.stores = Array.isArray(payload.stores) ? payload.stores : [];
+  const stores = Array.isArray(payload.stores) ? payload.stores : [];
+  state.stores = stores.filter(isCurrentLocatorStore);
   if (!state.initialViewApplied) {
     state.selectedRegion = "";
     state.initialViewApplied = true;
@@ -514,54 +527,6 @@ async function loadStores() {
   if (state.stores.length) {
     showStatusCard(true);
   }
-}
-
-async function runTemporaryStatusAudit() {
-  const auditToken = new URLSearchParams(location.search).get("status-audit");
-  if (auditToken !== "20260821-status-check") return;
-
-  const output = document.createElement("script");
-  output.id = "status-audit-output";
-  output.type = "application/json";
-  document.body.append(output);
-
-  const { Place } = await google.maps.importLibrary("places");
-  const stores = state.stores.filter((store) => store.google_place_id);
-  const results = new Array(stores.length);
-  let nextIndex = 0;
-  let completed = 0;
-
-  const publish = (complete = false) => {
-    output.textContent = JSON.stringify({ complete, completed, total: stores.length, results });
-  };
-  publish();
-
-  async function worker() {
-    while (nextIndex < stores.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      const store = stores[index];
-      try {
-        const place = new Place({ id: store.google_place_id });
-        await place.fetchFields({ fields: ["businessStatus"] });
-        results[index] = {
-          google_place_id: store.google_place_id,
-          business_status: place.businessStatus || "UNKNOWN",
-        };
-      } catch (error) {
-        results[index] = {
-          google_place_id: store.google_place_id,
-          business_status: "AUDIT_ERROR",
-          error: String(error?.message || error),
-        };
-      }
-      completed += 1;
-      if (completed % 10 === 0) publish();
-    }
-  }
-
-  await Promise.all(Array.from({ length: 6 }, () => worker()));
-  publish(true);
 }
 
 async function refreshStores() {
@@ -639,7 +604,6 @@ async function init() {
       showCitySearchFallback();
     }
     await loadStores();
-    await runTemporaryStatusAudit();
   } catch (error) {
     setStatus("Map unavailable", error.message);
     showStatusCard(true);
