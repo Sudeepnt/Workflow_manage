@@ -115,6 +115,15 @@ function setLoadingState(loading) {
   el.regionFilter.disabled = loading;
 }
 
+function setAreaButtonLabel(label) {
+  const text = el.areaButton.querySelector("span:last-child");
+  if (text) {
+    text.textContent = label;
+  } else {
+    el.areaButton.textContent = label;
+  }
+}
+
 function getSupabaseBrowserClient() {
   if (state.supabaseClient) return state.supabaseClient;
   const factory = globalThis.supabase?.createClient;
@@ -471,7 +480,8 @@ function clearAreaSelection() {
   state.areaMode = false;
   el.areaClearButton.hidden = true;
   el.areaButton.classList.remove("is-active");
-  el.areaButton.textContent = "Select Area";
+  el.areaButton.classList.add("is-primary");
+  setAreaButtonLabel("Select Area");
   setMapHelper("", "");
   updateMarkerStyles();
 }
@@ -842,8 +852,9 @@ function loadAreaDraft(area) {
   state.areaPath = area.points.map((point) => ({ ...point }));
   state.areaMode = true;
   el.areaButton.classList.add("is-active");
-  el.areaButton.textContent = "Done";
-  el.areaClearButton.hidden = false;
+  el.areaButton.classList.remove("is-primary");
+  setAreaButtonLabel("Done");
+  el.areaClearButton.hidden = true;
 
   state.areaPolygon = new google.maps.Polygon({
     map: state.map,
@@ -877,8 +888,9 @@ function startAreaSelection() {
   setStatus("Select area", "Tap the map to draw a custom territory.");
   setMapHelper("Select Area", "Tap up to 10 points on the map. Tap Done when the shape is ready.");
   el.areaButton.classList.add("is-active");
-  el.areaButton.textContent = "Done";
-  el.areaClearButton.hidden = false;
+  el.areaButton.classList.remove("is-primary");
+  setAreaButtonLabel("Done");
+  el.areaClearButton.hidden = true;
   state.areaMode = true;
 
   state.areaClickListener = state.map.addListener("click", (event) => {
