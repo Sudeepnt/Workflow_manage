@@ -24,7 +24,9 @@
           </label>
           <div class="map-actions">
             <button class="action-button action-icon-button" id="refresh-button" type="button" aria-label="Import or refresh stores" title="Refresh stores">
-              <span aria-hidden="true">↻</span>
+              <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M20 6v5h-5M4 18v-5h5M18.2 9A7 7 0 0 0 6.6 6.8M5.8 15A7 7 0 0 0 17.4 17.2" />
+              </svg>
             </button>
           </div>
         </header>
@@ -58,7 +60,11 @@
           <span class="mode-icon mode-icon-corners" aria-hidden="true"></span>
           <span>Select Area</span>
         </button>
-        <button class="mode-button mode-button-clear" id="area-clear-button" type="button" aria-label="Clear area selection" title="Clear area" hidden>×</button>
+        <button class="mode-button mode-button-clear" id="area-clear-button" type="button" aria-label="Clear area selection" title="Clear area" hidden>
+          <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
       </div>
 
       <section class="sr-only" id="status-card" aria-live="polite">
@@ -68,7 +74,11 @@
 
       <section class="store-sheet" id="store-sheet" role="dialog" aria-live="polite" hidden>
         <div class="sheet-handle" aria-hidden="true"></div>
-        <button class="sheet-close" id="sheet-close" type="button" aria-label="Close store details">&times;</button>
+        <button class="sheet-close" id="sheet-close" type="button" aria-label="Close store details">
+          <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
 
         <div class="sheet-view" id="sheet-store-view">
           <p class="sheet-kicker" id="sheet-kicker">Sangeetha Mobiles</p>

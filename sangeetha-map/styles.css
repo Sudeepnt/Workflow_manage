@@ -91,8 +91,8 @@ textarea {
   gap: 12px;
   min-width: 0;
   margin: 0;
-  font-size: 1.18rem;
-  font-weight: 800;
+  font-size: 1.02rem;
+  font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -117,8 +117,8 @@ textarea {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .map-actions {
@@ -158,6 +158,16 @@ textarea {
   box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
 }
 
+.control-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .action-button:disabled,
 .mode-button:disabled,
 .store-search-input:disabled,
@@ -171,7 +181,6 @@ textarea {
   width: 48px;
   min-height: 48px;
   padding: 0;
-  font-size: 1.28rem;
   border-radius: 16px;
 }
 
@@ -210,8 +219,8 @@ textarea {
   outline: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.94rem;
+  font-weight: 500;
   padding: 0;
 }
 
@@ -255,7 +264,7 @@ textarea {
 
 .store-search-primary {
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .store-search-secondary {
@@ -373,8 +382,7 @@ textarea {
   background: #fff;
   color: #d93025;
   border-color: rgba(217, 48, 37, 0.18);
-  font-size: 1.7rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -400,7 +408,7 @@ textarea {
 
 .map-helper-title {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -418,11 +426,11 @@ textarea {
   height: 34px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #f8fafc;
-  color: #334155;
+  background: #111827;
+  color: #fff;
   font-size: 0.84rem;
-  font-weight: 750;
-  box-shadow: 0 10px 22px rgba(82, 98, 122, 0.18);
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(17, 24, 39, 0.28);
 }
 
 .area-badge.is-active {
@@ -452,8 +460,8 @@ textarea {
   border: 1px solid rgba(31, 94, 255, 0.18);
   box-shadow: 0 6px 18px rgba(16, 33, 59, 0.1);
   gap: 10px;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .mode-button.is-primary,
@@ -549,7 +557,6 @@ textarea {
   border-radius: 999px;
   background: #f2f5f9;
   color: #334155;
-  font-size: 1.65rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -559,15 +566,15 @@ textarea {
   padding-right: 56px;
   color: #7a8599;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.72rem;
-  font-weight: 650;
+  letter-spacing: 0.18em;
+  font-size: 0.66rem;
+  font-weight: 600;
 }
 
 .sheet-title {
   margin: 6px 54px 0 0;
   color: #1d293d;
-  font-size: clamp(1.7rem, 6.6vw, 2.2rem);
+  font-size: clamp(1.45rem, 5.8vw, 1.9rem);
   line-height: 1.08;
   letter-spacing: -0.035em;
 }
@@ -596,7 +603,7 @@ textarea {
   align-items: start;
   margin: 0;
   color: #647086;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   line-height: 1.42;
 }
 
@@ -637,17 +644,17 @@ textarea {
   border-radius: 14px;
   background: #2f6df6;
   color: #fff;
-  font-size: 0.98rem;
-  font-weight: 720;
+  font-size: 0.92rem;
+  font-weight: 650;
   box-shadow: 0 12px 26px rgba(47, 109, 246, 0.18);
 }
 
 .button-icon {
-  width: 21px;
-  height: 21px;
+  width: 19px;
+  height: 19px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -672,8 +679,8 @@ textarea {
 }
 
 .sheet-field span {
-  font-size: 0.74rem;
-  font-weight: 650;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -706,8 +713,8 @@ textarea {
   border-radius: 14px;
   background: #fff;
   color: var(--blue-deep);
-  font-size: 0.96rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .sheet-grid {
@@ -721,8 +728,8 @@ textarea {
   color: #536078;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 600;
 }
 
 .radius-options {
@@ -737,8 +744,8 @@ textarea {
   padding: 0 10px;
   background: #eef4ff;
   color: #2456c9;
-  font-size: 0.92rem;
-  font-weight: 650;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -773,8 +780,8 @@ textarea {
   border-radius: 14px;
   background: #fff;
   color: #22304a;
-  font-size: 0.96rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -848,8 +855,8 @@ textarea {
 }
 
 .store-pin.is-selected {
-  background: linear-gradient(180deg, #4f8cff 0%, #2456c9 100%);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
+  background: linear-gradient(180deg, #10213b 0%, #0a1220 100%);
+  box-shadow: 0 14px 28px rgba(10, 18, 32, 0.28);
 }
 
 .store-pin.is-nearby {
@@ -867,11 +874,11 @@ textarea {
   height: 44px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(248, 250, 252, 0.96);
-  color: #2456c9;
+  background: rgba(16, 33, 59, 0.92);
+  color: #fff;
   font-size: 0.9rem;
-  font-weight: 750;
-  box-shadow: 0 12px 26px rgba(82, 98, 122, 0.18);
+  font-weight: 800;
+  box-shadow: 0 12px 26px rgba(16, 33, 59, 0.25);
 }
 
 .user-location-marker {
@@ -1023,7 +1030,6 @@ textarea {
   .mode-button-clear {
     min-width: 48px;
     width: 48px;
-    font-size: 1.55rem;
   }
 
   .mode-button {
