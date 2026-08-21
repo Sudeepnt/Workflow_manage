@@ -1,5 +1,6 @@
 const state = {
   config: null,
+  clusterer: null,
   map: null,
   markers: [],
   stores: [],
@@ -102,6 +103,10 @@ async function ensureMap() {
 }
 
 function clearMarkers() {
+  if (state.clusterer) {
+    state.clusterer.clearMarkers();
+    state.clusterer = null;
+  }
   state.markers.forEach((entry) => {
     if (entry.marker) {
       entry.marker.map = null;
@@ -162,7 +167,6 @@ async function renderMarkers(stores) {
     if (!Number.isFinite(Number(store.latitude)) || !Number.isFinite(Number(store.longitude))) return;
 
     const marker = new AdvancedMarkerElement({
-      map,
       position: {
         lat: Number(store.latitude),
         lng: Number(store.longitude),
@@ -186,6 +190,16 @@ async function renderMarkers(stores) {
       lng: Number(store.longitude),
     });
   });
+
+  if (state.markers.length) {
+    if (!globalThis.markerClusterer?.MarkerClusterer) {
+      throw new Error("Google Maps marker clustering failed to load.");
+    }
+    state.clusterer = new markerClusterer.MarkerClusterer({
+      map,
+      markers: state.markers.map((entry) => entry.marker),
+    });
+  }
 
   if (!state.markers.length) {
     showStoreSheet(null);
