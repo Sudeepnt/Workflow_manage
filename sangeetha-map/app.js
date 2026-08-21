@@ -563,14 +563,15 @@ function getAreaCentroid(points) {
 }
 
 function clearAreaVertexMarkers() {
-  state.areaVertexMarkers.forEach((marker) => {
+  // Both the drag handles and delete controls are classic Google Maps
+  // markers, so remove them through the marker API before rebuilding them.
+  [...state.areaVertexMarkers, ...state.areaDeleteMarkers].forEach((marker) => {
     if (typeof marker.setMap === "function") {
       marker.setMap(null);
     } else {
       marker.map = null;
     }
   });
-  state.areaDeleteMarkers.forEach((marker) => marker.map = null);
   state.areaVertexMarkers = [];
   state.areaDeleteMarkers = [];
 }
