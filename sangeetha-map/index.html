@@ -73,19 +73,35 @@
         <div class="sheet-view" id="sheet-store-view">
           <p class="sheet-kicker" id="sheet-kicker">Sangeetha Mobiles</p>
           <h2 class="sheet-title" id="sheet-title">Store</h2>
-          <p class="sheet-meta" id="sheet-meta"></p>
-          <p class="sheet-address" id="sheet-address"></p>
-          <p class="sheet-coordinates" id="sheet-coordinates"></p>
+          <div class="sheet-detail-stack">
+            <p class="sheet-meta detail-row">
+              <span class="detail-icon detail-icon-store" aria-hidden="true"></span>
+              <span id="sheet-meta"></span>
+            </p>
+            <p class="sheet-address detail-row">
+              <span class="detail-icon detail-icon-map" aria-hidden="true"></span>
+              <span id="sheet-address"></span>
+            </p>
+            <p class="sheet-coordinates detail-row">
+              <span class="detail-icon detail-icon-target" aria-hidden="true"></span>
+              <span id="sheet-coordinates"></span>
+            </p>
+          </div>
           <div class="sheet-actions">
-            <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">Open in Google Maps</a>
+            <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">
+              <span class="maps-pin-icon" aria-hidden="true"></span>
+              <span>Open in Google Maps</span>
+            </a>
           </div>
 
           <form class="store-edit-form" id="sqft-form">
-            <label class="sheet-field">
+            <label class="sheet-field sqft-field">
               <span>Store Sqft</span>
-              <input id="sqft-input" type="text" inputmode="numeric" placeholder="1850" autocomplete="off" />
+              <span class="sqft-row">
+                <input id="sqft-input" type="text" inputmode="numeric" placeholder="1850" autocomplete="off" />
+                <button class="sheet-save-button" id="sqft-save-button" type="submit">Save Sqft</button>
+              </span>
             </label>
-            <button class="sheet-save-button" id="sqft-save-button" type="submit">Save Sqft</button>
           </form>
         </div>
 
@@ -141,8 +157,14 @@
             <button class="radius-chip" type="button" data-radius-km="10">10 km</button>
           </div>
           <div class="proximity-actions">
-            <button class="proximity-action-button proximity-action-primary" id="proximity-done-button" type="button">Done</button>
-            <button class="proximity-action-button" id="proximity-clear-button" type="button">Clear</button>
+            <button class="proximity-action-button proximity-action-primary" id="proximity-done-button" type="button">
+              <span class="action-check" aria-hidden="true">✓</span>
+              <span>Done</span>
+            </button>
+            <button class="proximity-action-button" id="proximity-clear-button" type="button">
+              <span class="action-trash" aria-hidden="true"></span>
+              <span>Clear</span>
+            </button>
           </div>
           <p class="selection-summary" id="proximity-summary"></p>
           <ul class="selection-list" id="proximity-list"></ul>
