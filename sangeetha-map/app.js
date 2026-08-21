@@ -945,10 +945,6 @@ function renderAreaVertexMarkers() {
       zIndex: 3001,
     });
     deleteMarker.addListener("click", () => {
-      if (state.areaPath.length <= 3) {
-        setMapHelper("Minimum Reached", "An area needs at least 3 points.");
-        return;
-      }
       state.areaPath.splice(index, 1);
       state.activeAreaPointIndex = state.areaPath.length
         ? Math.min(index, state.areaPath.length - 1)
