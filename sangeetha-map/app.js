@@ -265,9 +265,9 @@ function getRegionCounts(stores) {
 function populateRegionFilter(stores) {
   const counts = getRegionCounts(stores);
   const regions = [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
-  el.regionFilter.replaceChildren(new Option("All India", ""));
-  regions.forEach(([region]) => {
-    el.regionFilter.add(new Option(region, region));
+  el.regionFilter.replaceChildren(new Option(`All India (${stores.length})`, ""));
+  regions.forEach(([region, count]) => {
+    el.regionFilter.add(new Option(`${region} (${count})`, region));
   });
   el.regionFilter.value = state.selectedRegion;
 }
