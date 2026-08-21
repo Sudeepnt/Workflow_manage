@@ -143,6 +143,14 @@ function setAreaButtonLabel(label) {
   }
 }
 
+function refreshAreaButtonLabel() {
+  if (state.areaMode) {
+    setAreaButtonLabel(`Done (${state.areaPath.length}/10)`);
+  } else {
+    setAreaButtonLabel("Select Area");
+  }
+}
+
 function hasClearableMapActions() {
   return Boolean(
     state.areaMode
@@ -175,7 +183,7 @@ function setAreaModeUi(active) {
   el.refreshButton.disabled = active || state.loading;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
-  setAreaButtonLabel(active ? "Done" : "Select Area");
+  refreshAreaButtonLabel();
   updateMapClearButtonVisibility();
 }
 
@@ -796,14 +804,14 @@ function applyAreaSelection() {
   if (!state.areaMode) {
     showSheetMode(state.sheetMode === "add" ? "add" : (state.selectedStoreId ? "store" : "location"));
     el.areaPanel.hidden = !selectedStores.length;
+    setMapHelper(
+      "Area Selected",
+      `${selectedStores.length} ${selectedStores.length === 1 ? "store is" : "stores are"} inside this boundary.`,
+    );
   } else {
     showSheetMode(null);
     el.areaPanel.hidden = true;
   }
-  setMapHelper(
-    "Area Selected",
-    `${selectedStores.length} ${selectedStores.length === 1 ? "store is" : "stores are"} inside this boundary.`,
-  );
   updateMarkerStyles();
 }
 
@@ -841,6 +849,15 @@ function renderAreaVertexMarkers() {
       zIndex: 3000,
     });
     dragMarker.addListener("drag", (event) => {
+      if (!event.latLng) return;
+      state.areaPath[index] = {
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
+      };
+      state.areaPolygon.setPaths(state.areaPath);
+    });
+    dragMarker.addListener("dragend", (event) => {
+      if (!event.latLng) return;
       state.areaPath[index] = {
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
@@ -869,6 +886,7 @@ function renderAreaVertexMarkers() {
       state.areaPolygon.setPaths(state.areaPath);
       applyAreaSelection();
       renderAreaVertexMarkers();
+      refreshAreaButtonLabel();
     });
     state.areaDeleteMarkers.push(deleteMarker);
   });
@@ -958,9 +976,11 @@ function loadAreaDraft(area) {
     });
     applyAreaSelection();
     renderAreaVertexMarkers();
+    refreshAreaButtonLabel();
   });
   applyAreaSelection();
   renderAreaVertexMarkers();
+  refreshAreaButtonLabel();
   setMapHelper("Editing Area", `${area.name} (#${area.area_number}) is ready. Drag points, delete points, or tap Done.`);
   renderSavedAreas();
 }
@@ -968,7 +988,7 @@ function loadAreaDraft(area) {
 function addAreaPoint(latLng) {
   if (!state.areaMode || !latLng) return;
   if (state.areaPath.length >= 10) {
-    setMapHelper("Point Limit", "You can use up to 10 points for one area.");
+    setMapHelper("Point limit", "10 / 10 points");
     return;
   }
 
@@ -1005,7 +1025,10 @@ function addAreaPoint(latLng) {
   applyAreaSelection();
   renderAreaVertexMarkers();
   updateMarkerStyles();
-  setMapHelper("Select Area", `${state.areaPath.length} / 10 points added. Tap Done when ready.`);
+  refreshAreaButtonLabel();
+  if (state.areaPath.length === 1) {
+    setMapHelper("", "");
+  }
 }
 
 function startAreaSelection() {
@@ -1015,7 +1038,7 @@ function startAreaSelection() {
   showStoreSheet(null);
   clearStoreSearch();
   setStatus("Select area", "Tap the map to draw a custom territory.");
-  setMapHelper("Select Area", "Tap up to 10 points on the map. Tap Done when the shape is ready.");
+  setMapHelper("Select Area", "Tap points");
   state.areaMode = true;
   setAreaModeUi(true);
 
