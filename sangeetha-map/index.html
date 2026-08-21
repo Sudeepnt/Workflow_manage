@@ -10,35 +10,39 @@
     <main class="map-shell">
       <div class="map-canvas" id="map" aria-label="Sangeetha store map"></div>
 
-      <header class="map-topbar">
-        <h1 aria-label="Sangeetha Store Map">
-          <img class="map-brand-logo" src="/sangeetha-map/assets/sangeetha-logo.png" alt="" aria-hidden="true" />
-          <span>Store Map</span>
-        </h1>
-        <label class="region-control">
-          <span class="sr-only">Region</span>
-          <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
-            <option value="">All India</option>
-          </select>
-        </label>
-        <div class="map-actions">
-          <button class="action-button" id="refresh-button" type="button" aria-label="Import or refresh stores">Refresh</button>
+      <section class="map-control-stack" aria-label="Map controls">
+        <header class="map-topbar">
+          <h1 aria-label="Sangeetha Store Map">
+            <img class="map-brand-logo" src="/sangeetha-map/assets/sangeetha-logo.png" alt="" aria-hidden="true" />
+            <span>Store Map</span>
+          </h1>
+          <label class="region-control">
+            <span class="sr-only">Region</span>
+            <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
+              <option value="">All India</option>
+            </select>
+          </label>
+          <div class="map-actions">
+            <button class="action-button" id="refresh-button" type="button" aria-label="Import or refresh stores">Refresh</button>
+          </div>
+        </header>
+
+        <div class="map-tools" aria-label="Map search and location controls">
+          <div class="city-search-card">
+            <button class="location-button" id="location-button" type="button" aria-label="Show my current location" title="My location">
+              <span class="location-glyph" aria-hidden="true"></span>
+            </button>
+            <div class="city-search-host" id="city-search-host"></div>
+          </div>
         </div>
-      </header>
 
-      <div class="map-tools" aria-label="Map search and location controls">
-        <div class="city-search-card" id="city-search-host"></div>
-        <button class="location-button" id="location-button" type="button" aria-label="Show my current location" title="My location">
-          <span class="location-glyph" aria-hidden="true"></span>
-        </button>
-      </div>
-
-      <div class="map-modebar" aria-label="Store management tools">
-        <button class="mode-button" id="add-store-button" type="button">+ Add Store</button>
-        <button class="mode-button" id="area-button" type="button">Select Area</button>
-        <button class="mode-button" id="area-finish-button" type="button" hidden>Finish Area</button>
-        <button class="mode-button mode-button-secondary" id="area-clear-button" type="button" hidden>Clear Area</button>
-      </div>
+        <div class="map-modebar" aria-label="Store management tools">
+          <button class="mode-button" id="add-store-button" type="button">+ Add Store</button>
+          <button class="mode-button" id="area-button" type="button">Select Area</button>
+          <button class="mode-button" id="area-finish-button" type="button" hidden>Finish Area</button>
+          <button class="mode-button mode-button-secondary" id="area-clear-button" type="button" hidden>Clear Area</button>
+        </div>
+      </section>
 
       <section class="sr-only" id="status-card" aria-live="polite">
         <p class="status-label" id="status-label">Connecting…</p>
