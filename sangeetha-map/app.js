@@ -238,6 +238,10 @@ async function renderMarkers(stores) {
   }
 
   if (!state.selectedRegion) {
+    google.maps.event.addListenerOnce(map, "idle", () => {
+      const zoom = map.getZoom();
+      if (Number.isFinite(zoom)) map.setZoom(zoom + 0.25);
+    });
     map.fitBounds(INDIA_BOUNDS, {
       top: 82,
       right: 12,
