@@ -986,6 +986,7 @@ function renderSavedAreas() {
     });
     state.areaOverlays.push(polygon);
 
+    if (state.areaMode && state.areaDraftId === area.id) return;
     const badge = new google.maps.marker.AdvancedMarkerElement({
       map: state.map,
       position: center,
