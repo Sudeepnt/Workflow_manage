@@ -196,16 +196,30 @@ body {
 }
 
 .store-pin {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50% 50% 50% 0;
   background: #111;
   border: 2px solid #fff;
+  transform: translateY(-5px) rotate(-45deg);
+  transform-origin: center;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.26);
 }
 
+.store-pin::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+}
+
 .store-pin.is-selected {
-  transform: scale(1.18);
+  transform: translateY(-5px) rotate(-45deg) scale(1.18);
   background: #b91c1c;
 }
 
