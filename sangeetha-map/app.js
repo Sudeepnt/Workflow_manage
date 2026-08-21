@@ -14,11 +14,9 @@ const el = {
   map: document.getElementById("map"),
   refreshButton: document.getElementById("refresh-button"),
   regionFilter: document.getElementById("region-filter"),
-  locateButton: document.getElementById("locate-button"),
   statusCard: document.getElementById("status-card"),
   statusLabel: document.getElementById("status-label"),
   statusDetail: document.getElementById("status-detail"),
-  storeCount: document.getElementById("store-count"),
   storeSheet: document.getElementById("store-sheet"),
   sheetTitle: document.getElementById("sheet-title"),
   sheetAddress: document.getElementById("sheet-address"),
@@ -38,7 +36,6 @@ function showStatusCard(visible) {
 
 function setLoadingState(loading) {
   el.refreshButton.disabled = loading;
-  el.locateButton.disabled = loading;
   el.regionFilter.disabled = loading;
 }
 
@@ -276,19 +273,15 @@ function populateRegionFilter(stores) {
 
 async function applyRegionFilter() {
   const region = state.selectedRegion;
-  const regionCount = getRegionCounts(state.stores).size;
   const stores = region
     ? state.stores.filter((store) => store.state === region)
     : state.stores;
   showStoreSheet(null);
-  el.storeCount.textContent = region
-    ? `${stores.length} ${stores.length === 1 ? "Store" : "Stores"} · ${region}`
-    : `${stores.length} Stores · ${regionCount} Regions`;
   setStatus(
     region ? `${region} coverage` : "Verified retail coverage",
     region
       ? `${stores.length} verified retail ${stores.length === 1 ? "location" : "locations"}. Warehouses are excluded.`
-      : `${regionCount} states or territories have verified stores. Warehouses are excluded.`,
+      : `${getRegionCounts(state.stores).size} states or territories have verified stores. Warehouses are excluded.`,
   );
   await renderMarkers(stores);
 }
@@ -353,38 +346,8 @@ async function refreshStores() {
   }
 }
 
-function focusCurrentLocation() {
-  if (!navigator.geolocation || !state.map) {
-    setStatus("Location unavailable", "This browser cannot provide your current location.");
-    showStatusCard(true);
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const center = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      };
-      state.map.panTo(center);
-      state.map.setZoom(Math.max(state.map.getZoom() || 14, 14));
-      setStatus("Location centered", "Showing your current location on the map.");
-      showStatusCard(true);
-    },
-    (error) => {
-      setStatus("Location denied", error.message || "Unable to access current location.");
-      showStatusCard(true);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-    },
-  );
-}
-
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
-  el.locateButton.addEventListener("click", focusCurrentLocation);
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;
     try {
