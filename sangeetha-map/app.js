@@ -1,18 +1,30 @@
 const state = {
-  config: null,
-  clusterer: null,
-  initialViewApplied: false,
-  map: null,
-  markers: [],
+  activeStores: [],
+  areaClickListener: null,
+  areaMode: false,
+  areaPath: [],
+  areaPolygon: null,
+  areaSelectedIds: new Set(),
   cityBoundaryLayer: null,
   cityBoundaryRectangle: null,
+  clusterer: null,
+  config: null,
+  filteredStores: [],
+  initialViewApplied: false,
   locationAccuracyCircle: null,
   locationMarker: null,
+  map: null,
+  markers: [],
   placeAutocomplete: null,
-  selectedRegion: "",
-  stores: [],
-  selectedStoreId: null,
+  proximityCircle: null,
+  proximityOrigin: null,
+  proximityRadiusKm: null,
+  proximityStoreIds: new Set(),
   selectedMarkerId: null,
+  selectedRegion: "",
+  selectedStoreId: null,
+  sheetMode: "hidden",
+  stores: [],
 };
 
 const INDIA_BOUNDS = {
@@ -28,19 +40,40 @@ const CLOSED_BUSINESS_STATUSES = new Set([
 ]);
 
 const el = {
-  map: document.getElementById("map"),
+  addStoreButton: document.getElementById("add-store-button"),
+  addStoreForm: document.getElementById("add-store-form"),
+  addStoreView: document.getElementById("sheet-add-view"),
+  areaButton: document.getElementById("area-button"),
+  areaClearButton: document.getElementById("area-clear-button"),
+  areaFinishButton: document.getElementById("area-finish-button"),
+  areaList: document.getElementById("area-list"),
+  areaPanel: document.getElementById("area-panel"),
+  areaSummary: document.getElementById("area-summary"),
   citySearchHost: document.getElementById("city-search-host"),
   locationButton: document.getElementById("location-button"),
+  map: document.getElementById("map"),
+  proximityList: document.getElementById("proximity-list"),
+  proximityOriginLabel: document.getElementById("proximity-origin-label"),
+  proximityPanel: document.getElementById("proximity-panel"),
+  proximitySummary: document.getElementById("proximity-summary"),
+  radiusOptions: document.getElementById("radius-options"),
   refreshButton: document.getElementById("refresh-button"),
   regionFilter: document.getElementById("region-filter"),
-  statusCard: document.getElementById("status-card"),
-  statusLabel: document.getElementById("status-label"),
-  statusDetail: document.getElementById("status-detail"),
-  storeSheet: document.getElementById("store-sheet"),
-  sheetClose: document.getElementById("sheet-close"),
-  sheetTitle: document.getElementById("sheet-title"),
   sheetAddress: document.getElementById("sheet-address"),
+  sheetClose: document.getElementById("sheet-close"),
+  sheetCoordinates: document.getElementById("sheet-coordinates"),
+  sheetFeedback: document.getElementById("sheet-feedback"),
+  sheetKicker: document.getElementById("sheet-kicker"),
   sheetLink: document.getElementById("sheet-link"),
+  sheetMeta: document.getElementById("sheet-meta"),
+  sheetStoreView: document.getElementById("sheet-store-view"),
+  sheetTitle: document.getElementById("sheet-title"),
+  sqftForm: document.getElementById("sqft-form"),
+  sqftInput: document.getElementById("sqft-input"),
+  statusCard: document.getElementById("status-card"),
+  statusDetail: document.getElementById("status-detail"),
+  statusLabel: document.getElementById("status-label"),
+  storeSheet: document.getElementById("store-sheet"),
 };
 
 let mapsLoaderPromise = null;
@@ -57,6 +90,18 @@ function showStatusCard(visible) {
 function setLoadingState(loading) {
   el.refreshButton.disabled = loading;
   el.regionFilter.disabled = loading;
+}
+
+function setSheetFeedback(message, isError = false) {
+  if (!message) {
+    el.sheetFeedback.hidden = true;
+    el.sheetFeedback.textContent = "";
+    el.sheetFeedback.dataset.tone = "";
+    return;
+  }
+  el.sheetFeedback.hidden = false;
+  el.sheetFeedback.textContent = message;
+  el.sheetFeedback.dataset.tone = isError ? "error" : "success";
 }
 
 async function fetchJson(url, options) {
@@ -90,7 +135,7 @@ function loadMapsScript() {
       resolve();
     };
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker,places,geometry`;
     script.async = true;
     script.defer = true;
     script.onerror = () => {
@@ -111,8 +156,8 @@ async function ensureMap() {
   const { Map } = await google.maps.importLibrary("maps");
 
   state.map = new Map(el.map, {
-    center: { lat: 22.6, lng: 78.9 },
-    zoom: 4,
+    center: { lat: 22.9, lng: 79.1 },
+    zoom: 5,
     mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
     fullscreenControl: false,
     mapTypeControl: false,
@@ -120,7 +165,34 @@ async function ensureMap() {
     gestureHandling: "greedy",
     clickableIcons: false,
   });
+
+  state.map.addListener("click", () => {
+    if (!state.areaMode) return;
+    showStoreSheet(null);
+  });
+
   return state.map;
+}
+
+function getStoreKey(store) {
+  return String(store.id ?? store.google_place_id ?? store.official_store_id);
+}
+
+function formatStoreNumber(store) {
+  const number = Number(store.store_number);
+  return Number.isFinite(number) ? String(number) : String(store.id ?? "");
+}
+
+function getStoreLocationName(name) {
+  return String(name ?? "")
+    .replace(/^Sangeetha\s+(?:Mobiles|Gadgets)\s*-\s*/i, "")
+    .trim();
+}
+
+function formatSqft(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "Not set";
+  return `${number.toLocaleString("en-IN")} sqft`;
 }
 
 function clearCityBoundary() {
@@ -180,14 +252,13 @@ async function selectCity(placePrediction) {
 
   if (!place.location) throw new Error("Google Maps did not return this city's location.");
 
-  showStoreSheet(null);
   drawCityBoundary(place);
   if (place.viewport) {
     state.map.fitBounds(place.viewport, {
-      top: 150,
-      right: 36,
+      top: 180,
+      right: 24,
       bottom: 48,
-      left: 36,
+      left: 24,
     });
   } else {
     state.map.setCenter(place.location);
@@ -246,6 +317,34 @@ function getCurrentPosition() {
   });
 }
 
+function clearProximitySelection() {
+  state.proximityOrigin = null;
+  state.proximityRadiusKm = null;
+  state.proximityStoreIds = new Set();
+  if (state.proximityCircle) {
+    state.proximityCircle.setMap(null);
+    state.proximityCircle = null;
+  }
+}
+
+function clearAreaSelection() {
+  state.areaPath = [];
+  state.areaSelectedIds = new Set();
+  if (state.areaPolygon) {
+    state.areaPolygon.setMap(null);
+    state.areaPolygon = null;
+  }
+  if (state.areaClickListener) {
+    google.maps.event.removeListener(state.areaClickListener);
+    state.areaClickListener = null;
+  }
+  state.areaMode = false;
+  el.areaFinishButton.hidden = true;
+  el.areaClearButton.hidden = true;
+  el.areaButton.classList.remove("is-active");
+  updateMarkerStyles();
+}
+
 async function showCurrentLocation() {
   el.locationButton.disabled = true;
   el.locationButton.classList.add("is-locating");
@@ -259,7 +358,6 @@ async function showCurrentLocation() {
     };
     const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
 
-    clearCityBoundary();
     if (!state.locationMarker) {
       state.locationMarker = new AdvancedMarkerElement({
         map,
@@ -288,8 +386,15 @@ async function showCurrentLocation() {
 
     map.panTo(location);
     map.setZoom(15);
-    showStoreSheet(null);
-    setStatus("Current location", "Showing your current position on the map.");
+    state.proximityOrigin = {
+      type: "location",
+      label: "Your current location",
+      latitude: location.lat,
+      longitude: location.lng,
+    };
+    setStatus("Current location", "Pick a radius to find stores around you.");
+    showSheetMode("location");
+    renderProximitySelection();
   } catch (error) {
     const locationMessages = {
       1: "Allow location access in your browser to use this button.",
@@ -313,16 +418,26 @@ function clearMarkers() {
     state.clusterer = null;
   }
   state.markers.forEach((entry) => {
-    if (entry.marker) {
-      entry.marker.map = null;
-    }
+    if (entry.marker) entry.marker.map = null;
   });
   state.markers = [];
 }
 
-function createPinNode(selected) {
-  const pin = document.createElement("div");
-  pin.className = `store-pin${selected ? " is-selected" : ""}`;
+function createPinNode(store, flags = {}) {
+  const pin = document.createElement("button");
+  pin.type = "button";
+  pin.className = [
+    "store-pin",
+    flags.selected ? "is-selected" : "",
+    flags.nearby ? "is-nearby" : "",
+    flags.area ? "is-area-selected" : "",
+  ].filter(Boolean).join(" ");
+  pin.setAttribute("aria-label", `Store ${formatStoreNumber(store)}`);
+
+  const number = document.createElement("span");
+  number.className = "store-pin-number";
+  number.textContent = formatStoreNumber(store);
+  pin.appendChild(number);
   return pin;
 }
 
@@ -334,39 +449,253 @@ function createClusterNode(count) {
   return cluster;
 }
 
-function getStoreKey(store) {
-  return String(store.id ?? store.google_place_id ?? store.official_store_id);
-}
-
-function updateSelectedMarker() {
+function updateMarkerStyles() {
   state.markers.forEach((entry) => {
-    const selected = getStoreKey(entry.store) === state.selectedMarkerId;
-    entry.marker.content = createPinNode(selected);
+    const key = getStoreKey(entry.store);
+    entry.marker.content = createPinNode(entry.store, {
+      selected: key === state.selectedMarkerId,
+      nearby: state.proximityStoreIds.has(key),
+      area: state.areaSelectedIds.has(key),
+    });
   });
 }
 
-function getStoreLocationName(name) {
-  return String(name ?? "")
-    .replace(/^Sangeetha\s+(?:Mobiles|Gadgets)\s*-\s*/i, "")
-    .trim();
+function getStoreCoordinates(store) {
+  return {
+    lat: Number(store.latitude),
+    lng: Number(store.longitude),
+  };
+}
+
+function getRadiusOptions() {
+  return [...el.radiusOptions.querySelectorAll("[data-radius-km]")];
+}
+
+function setActiveRadiusChip() {
+  getRadiusOptions().forEach((button) => {
+    button.classList.toggle(
+      "is-active",
+      Number(button.dataset.radiusKm) === state.proximityRadiusKm,
+    );
+  });
+}
+
+function renderStoreList(listEl, stores) {
+  listEl.replaceChildren();
+  stores.slice(0, 8).forEach((store) => {
+    const item = document.createElement("li");
+    item.textContent = `#${formatStoreNumber(store)} ${getStoreLocationName(store.name)}`;
+    listEl.appendChild(item);
+  });
+}
+
+function showSheetMode(mode) {
+  state.sheetMode = mode || "hidden";
+  const hidden = state.sheetMode === "hidden";
+  el.storeSheet.hidden = hidden;
+  el.sheetStoreView.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
+  el.addStoreView.hidden = state.sheetMode !== "add";
+  el.proximityPanel.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
+  el.areaPanel.hidden = !state.areaSelectedIds.size;
+  if (hidden) {
+    setSheetFeedback("");
+  }
+}
+
+function renderStoreSheet(store) {
+  state.selectedStoreId = getStoreKey(store);
+  state.selectedMarkerId = getStoreKey(store);
+  state.proximityOrigin = {
+    type: "store",
+    label: `Store #${formatStoreNumber(store)}`,
+    latitude: Number(store.latitude),
+    longitude: Number(store.longitude),
+  };
+
+  el.sheetKicker.textContent = "Sangeetha Mobiles";
+  el.sheetTitle.textContent = getStoreLocationName(store.name) || store.name || "Store";
+  el.sheetMeta.textContent = `Store #${formatStoreNumber(store)} • ${store.state || "State unavailable"} • ${formatSqft(store.store_sqft)}`;
+  el.sheetAddress.textContent = store.address || "Address unavailable";
+  el.sheetCoordinates.textContent = `${Number(store.latitude).toFixed(6)}, ${Number(store.longitude).toFixed(6)}`;
+  el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
+  el.sqftInput.value = store.store_sqft ? String(store.store_sqft) : "";
+  setSheetFeedback("");
+  renderProximitySelection();
+  showSheetMode("store");
+  updateMarkerStyles();
+}
+
+function renderLocationSheet() {
+  state.selectedStoreId = null;
+  state.selectedMarkerId = null;
+  el.sheetKicker.textContent = "My Location";
+  el.sheetTitle.textContent = "Your Current Position";
+  el.sheetMeta.textContent = "Use a radius to see nearby Sangeetha stores.";
+  el.sheetAddress.textContent = "";
+  el.sheetCoordinates.textContent = state.proximityOrigin
+    ? `${state.proximityOrigin.latitude.toFixed(6)}, ${state.proximityOrigin.longitude.toFixed(6)}`
+    : "";
+  el.sheetLink.href = state.proximityOrigin
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${state.proximityOrigin.latitude},${state.proximityOrigin.longitude}`)}`
+    : "#";
+  el.sqftInput.value = "";
+  renderProximitySelection();
+  showSheetMode("location");
+  updateMarkerStyles();
 }
 
 function showStoreSheet(store) {
   if (!store) {
-    el.storeSheet.hidden = true;
     state.selectedStoreId = null;
     state.selectedMarkerId = null;
-    updateSelectedMarker();
+    showSheetMode(null);
+    updateMarkerStyles();
+    return;
+  }
+  renderStoreSheet(store);
+}
+
+function showAddStoreSheet() {
+  state.selectedStoreId = null;
+  state.selectedMarkerId = null;
+  setSheetFeedback("");
+  el.addStoreForm.reset();
+  showSheetMode("add");
+  updateMarkerStyles();
+}
+
+function applyAreaSelection() {
+  if (!state.areaPolygon) return;
+  const polygon = state.areaPolygon;
+  const selectedStores = state.filteredStores.filter((store) => {
+    const latLng = new google.maps.LatLng(Number(store.latitude), Number(store.longitude));
+    return google.maps.geometry.poly.containsLocation(latLng, polygon);
+  });
+
+  state.areaSelectedIds = new Set(selectedStores.map((store) => getStoreKey(store)));
+  el.areaSummary.textContent = `${selectedStores.length} ${selectedStores.length === 1 ? "store" : "stores"} selected`;
+  renderStoreList(el.areaList, selectedStores);
+  showSheetMode(state.sheetMode === "add" ? "add" : (state.selectedStoreId ? "store" : "location"));
+  el.areaPanel.hidden = !selectedStores.length;
+  updateMarkerStyles();
+}
+
+function startAreaSelection() {
+  clearCityBoundary();
+  clearProximitySelection();
+  clearAreaSelection();
+  setStatus("Select area", "Tap around the map to draw a polygon, then finish the area.");
+  el.areaButton.classList.add("is-active");
+  el.areaFinishButton.hidden = false;
+  el.areaClearButton.hidden = false;
+  state.areaMode = true;
+
+  state.areaClickListener = state.map.addListener("click", (event) => {
+    if (!event.latLng) return;
+    state.areaPath.push({
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng(),
+    });
+
+    if (!state.areaPolygon) {
+      state.areaPolygon = new google.maps.Polygon({
+        map: state.map,
+        paths: state.areaPath,
+        strokeColor: "#d93025",
+        strokeOpacity: 0.95,
+        strokeWeight: 3,
+        fillColor: "#d93025",
+        fillOpacity: 0.12,
+      });
+    } else {
+      state.areaPolygon.setPaths(state.areaPath);
+    }
+  });
+}
+
+function finishAreaSelection() {
+  if (state.areaPath.length < 3 || !state.areaPolygon) {
+    setStatus("Area incomplete", "Add at least three points to finish the selection.");
+    showStatusCard(true);
+    return;
+  }
+  if (state.areaClickListener) {
+    google.maps.event.removeListener(state.areaClickListener);
+    state.areaClickListener = null;
+  }
+  state.areaMode = false;
+  el.areaButton.classList.remove("is-active");
+  applyAreaSelection();
+}
+
+function clearInteractiveSelections() {
+  clearCityBoundary();
+  clearProximitySelection();
+  clearAreaSelection();
+  el.areaPanel.hidden = true;
+  el.proximityPanel.hidden = state.sheetMode === "hidden";
+  updateMarkerStyles();
+}
+
+function renderProximitySelection() {
+  if (!state.proximityOrigin) {
+    el.proximitySummary.textContent = "Pick 1 km, 3 km, 5 km, or 10 km.";
+    el.proximityOriginLabel.textContent = "";
+    el.proximityList.replaceChildren();
+    setActiveRadiusChip();
     return;
   }
 
-  state.selectedStoreId = getStoreKey(store);
-  state.selectedMarkerId = getStoreKey(store);
-  el.sheetTitle.textContent = `Sangeetha Mobiles - ${getStoreLocationName(store.name)}`;
-  el.sheetAddress.textContent = store.address || "Address unavailable";
-  el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
-  el.storeSheet.hidden = false;
-  updateSelectedMarker();
+  el.proximityOriginLabel.textContent = state.proximityOrigin.label;
+  if (!state.proximityRadiusKm) {
+    el.proximitySummary.textContent = "Pick 1 km, 3 km, 5 km, or 10 km.";
+    el.proximityList.replaceChildren();
+    setActiveRadiusChip();
+    return;
+  }
+
+  const nearbyStores = state.filteredStores.filter((store) => state.proximityStoreIds.has(getStoreKey(store)));
+  el.proximitySummary.textContent = `${nearbyStores.length} ${nearbyStores.length === 1 ? "store" : "stores"} within ${state.proximityRadiusKm} km`;
+  renderStoreList(el.proximityList, nearbyStores);
+  setActiveRadiusChip();
+}
+
+function applyProximityRadius(radiusKm) {
+  if (!state.proximityOrigin) return;
+  state.proximityRadiusKm = radiusKm;
+
+  const origin = new google.maps.LatLng(
+    state.proximityOrigin.latitude,
+    state.proximityOrigin.longitude,
+  );
+  const nearbyIds = state.filteredStores
+    .filter((store) => {
+      const latLng = new google.maps.LatLng(Number(store.latitude), Number(store.longitude));
+      const distanceMeters = google.maps.geometry.spherical.computeDistanceBetween(origin, latLng);
+      return distanceMeters <= (radiusKm * 1000);
+    })
+    .map((store) => getStoreKey(store));
+
+  state.proximityStoreIds = new Set(nearbyIds);
+
+  if (state.proximityCircle) state.proximityCircle.setMap(null);
+  state.proximityCircle = new google.maps.Circle({
+    map: state.map,
+    center: {
+      lat: state.proximityOrigin.latitude,
+      lng: state.proximityOrigin.longitude,
+    },
+    radius: radiusKm * 1000,
+    strokeColor: "#1f5eff",
+    strokeOpacity: 0.8,
+    strokeWeight: 2,
+    fillColor: "#1f5eff",
+    fillOpacity: 0.09,
+    clickable: false,
+  });
+
+  renderProximitySelection();
+  updateMarkerStyles();
 }
 
 async function renderMarkers(stores) {
@@ -377,34 +706,28 @@ async function renderMarkers(stores) {
   clearMarkers();
 
   stores.forEach((store) => {
-    if (!Number.isFinite(Number(store.latitude)) || !Number.isFinite(Number(store.longitude))) return;
+    const latitude = Number(store.latitude);
+    const longitude = Number(store.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
     const marker = new AdvancedMarkerElement({
-      position: {
-        lat: Number(store.latitude),
-        lng: Number(store.longitude),
-      },
-      title: store.name,
+      position: { lat: latitude, lng: longitude },
+      title: `${store.name} (#${formatStoreNumber(store)})`,
       gmpClickable: true,
-      content: createPinNode(false),
+      content: createPinNode(store),
     });
 
     marker.addEventListener("gmp-click", () => {
+      if (state.areaMode) return;
       showStoreSheet(store);
-      map.panTo({
-        lat: Number(store.latitude),
-        lng: Number(store.longitude),
-      });
+      map.panTo({ lat: latitude, lng: longitude });
     });
 
     state.markers.push({ marker, store });
-    bounds.extend({
-      lat: Number(store.latitude),
-      lng: Number(store.longitude),
-    });
+    bounds.extend({ lat: latitude, lng: longitude });
   });
 
-  if (state.markers.length > 50) {
+  if (state.markers.length > 30) {
     if (!globalThis.markerClusterer?.MarkerClusterer) {
       throw new Error("Google Maps marker clustering failed to load.");
     }
@@ -427,22 +750,17 @@ async function renderMarkers(stores) {
   }
 
   if (!state.markers.length) {
-    showStoreSheet(null);
     setStatus("No stores found", "Run an import to populate the map.");
     showStatusCard(true);
     return;
   }
 
   if (!state.selectedRegion) {
-    google.maps.event.addListenerOnce(map, "idle", () => {
-      const zoom = map.getZoom();
-      if (Number.isFinite(zoom)) map.setZoom(zoom + 0.25);
-    });
     map.fitBounds(INDIA_BOUNDS, {
-      top: 82,
-      right: 12,
-      bottom: 18,
-      left: 12,
+      top: 120,
+      right: 16,
+      bottom: 22,
+      left: 16,
     });
     return;
   }
@@ -450,25 +768,9 @@ async function renderMarkers(stores) {
   if (state.markers.length === 1) {
     map.setCenter(bounds.getCenter());
     map.setZoom(15);
-  } else if (state.markers.length <= 50) {
-    const span = bounds.toSpan();
-    const largestSpan = Math.max(span.lat(), span.lng());
-    const zoom = largestSpan <= 0.2
-      ? 11
-      : largestSpan <= 0.5
-        ? 10
-        : largestSpan <= 1.5
-          ? 9
-          : largestSpan <= 3
-            ? 8
-            : largestSpan <= 6
-              ? 7
-              : 6;
-    map.setCenter(bounds.getCenter());
-    map.setZoom(zoom);
-  } else {
-    map.fitBounds(bounds, 72);
+    return;
   }
+  map.fitBounds(bounds, 72);
 }
 
 function getRegionCounts(stores) {
@@ -480,6 +782,7 @@ function getRegionCounts(stores) {
 }
 
 function isCurrentLocatorStore(store) {
+  if (store.data_source === "manual") return true;
   return (
     store.verification_status !== "google_directory_only"
     && !CLOSED_BUSINESS_STATUSES.has(store.business_status)
@@ -497,18 +800,21 @@ function populateRegionFilter(stores) {
 }
 
 async function applyRegionFilter() {
-  const region = state.selectedRegion;
-  const stores = region
-    ? state.stores.filter((store) => store.state === region)
-    : state.stores;
-  showStoreSheet(null);
+  state.filteredStores = state.selectedRegion
+    ? state.stores.filter((store) => store.state === state.selectedRegion)
+    : state.stores.slice();
+
+  clearInteractiveSelections();
+  if (state.sheetMode !== "add") showStoreSheet(null);
+
   setStatus(
-    region ? `${region} official locations` : "Official locator coverage",
-    region
-      ? `${stores.length} official locator ${stores.length === 1 ? "location" : "locations"}. Closed Google listings and warehouses are excluded.`
-      : `${state.stores.length} locations listed by Sangeetha across ${getRegionCounts(state.stores).size} states or territories.`,
+    state.selectedRegion ? `${state.selectedRegion} stores` : "Official locator coverage",
+    state.selectedRegion
+      ? `${state.filteredStores.length} stores currently visible in ${state.selectedRegion}.`
+      : `${state.stores.length} stores across ${getRegionCounts(state.stores).size} states or territories.`,
   );
-  await renderMarkers(stores);
+
+  await renderMarkers(state.filteredStores);
 }
 
 async function loadStores() {
@@ -518,15 +824,13 @@ async function loadStores() {
   const payload = await fetchJson("/api/sangeetha-stores");
   const stores = Array.isArray(payload.stores) ? payload.stores : [];
   state.stores = stores.filter(isCurrentLocatorStore);
+  state.activeStores = state.stores.slice();
   if (!state.initialViewApplied) {
     state.selectedRegion = "";
     state.initialViewApplied = true;
   }
   populateRegionFilter(state.stores);
   await applyRegionFilter();
-  if (state.stores.length) {
-    showStatusCard(true);
-  }
 }
 
 async function refreshStores() {
@@ -572,21 +876,108 @@ async function refreshStores() {
   }
 }
 
+async function saveStoreSqft(event) {
+  event.preventDefault();
+  if (!state.selectedStoreId) return;
+
+  const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
+  if (!store) return;
+
+  try {
+    const payload = await fetchJson("/api/sangeetha-stores", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: store.id,
+        storeSqft: el.sqftInput.value,
+      }),
+    });
+    const nextStore = payload.store;
+    state.stores = state.stores.map((entry) => (entry.id === nextStore.id ? nextStore : entry));
+    setSheetFeedback(`Store #${formatStoreNumber(nextStore)} sqft saved.`);
+    renderStoreSheet(nextStore);
+  } catch (error) {
+    setSheetFeedback(error.message, true);
+  }
+}
+
+async function createManualStore(event) {
+  event.preventDefault();
+
+  try {
+    const payload = await fetchJson("/api/sangeetha-stores", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: document.getElementById("add-store-name").value,
+        latitude: document.getElementById("add-store-latitude").value,
+        longitude: document.getElementById("add-store-longitude").value,
+        address: document.getElementById("add-store-address").value,
+        city: document.getElementById("add-store-city").value,
+        state: document.getElementById("add-store-state").value,
+        storeSqft: document.getElementById("add-store-sqft").value,
+      }),
+    });
+    const nextStore = payload.store;
+    setSheetFeedback(`Store #${formatStoreNumber(nextStore)} created.`);
+    await loadStores();
+    state.selectedRegion = state.selectedRegion && nextStore.state === state.selectedRegion
+      ? state.selectedRegion
+      : "";
+    populateRegionFilter(state.stores);
+    await applyRegionFilter();
+    showStoreSheet(nextStore);
+  } catch (error) {
+    setSheetFeedback(error.message, true);
+  }
+}
+
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
   el.locationButton.addEventListener("click", showCurrentLocation);
   el.sheetClose.addEventListener("click", () => showStoreSheet(null));
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !el.storeSheet.hidden) showStoreSheet(null);
-  });
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;
-    clearCityBoundary();
     try {
       await applyRegionFilter();
     } catch (error) {
       setStatus("Region unavailable", error.message);
     }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      if (state.areaMode) {
+        clearAreaSelection();
+      }
+      if (!el.storeSheet.hidden) {
+        showStoreSheet(null);
+      }
+    }
+  });
+  el.addStoreButton.addEventListener("click", showAddStoreSheet);
+  el.areaButton.addEventListener("click", () => {
+    if (state.areaMode) {
+      clearAreaSelection();
+      return;
+    }
+    startAreaSelection();
+  });
+  el.areaFinishButton.addEventListener("click", finishAreaSelection);
+  el.areaClearButton.addEventListener("click", () => {
+    clearAreaSelection();
+    el.areaPanel.hidden = true;
+  });
+  el.sqftForm.addEventListener("submit", saveStoreSqft);
+  el.addStoreForm.addEventListener("submit", createManualStore);
+  getRadiusOptions().forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!state.proximityOrigin) return;
+      applyProximityRadius(Number(button.dataset.radiusKm));
+    });
   });
 }
 

@@ -7,6 +7,29 @@ const path = require("node:path");
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8000;
 const catalogData = require("../data/sangeetha-store-catalog.json");
+let localStores = catalogData.stores.map((store, index) => ({
+  id: index + 1,
+  store_number: index + 1,
+  google_place_id: store.google_place_id,
+  official_store_id: store.official_store_id,
+  data_source: store.verification_status === "manual" ? "manual" : "catalog",
+  name: store.name,
+  latitude: store.latitude,
+  longitude: store.longitude,
+  address: store.address,
+  business_status: null,
+  google_maps_uri: store.google_maps_uri,
+  store_code: store.store_code,
+  phone: store.phone,
+  hours: store.hours,
+  city: store.city,
+  state: store.state,
+  verification_status: store.verification_status,
+  store_sqft: null,
+  google_synced_at: null,
+}));
+let nextLocalId = localStores.length + 1;
+let nextStoreNumber = localStores.length + 1;
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -22,6 +45,15 @@ function sendJson(response, status, payload) {
     "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(payload));
+}
+
+async function readJsonBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+  const raw = Buffer.concat(chunks).toString("utf8").trim();
+  return raw ? JSON.parse(raw) : {};
 }
 
 function getLocalMapsKey() {
@@ -67,33 +99,68 @@ const server = http.createServer((request, response) => {
   }
 
   if (request.method === "GET" && url.pathname === "/api/sangeetha-stores") {
-    const stores = catalogData.stores.map((store, index) => ({
-      id: index + 1,
-      google_place_id: store.google_place_id,
-      official_store_id: store.official_store_id,
-      name: store.name,
-      latitude: store.latitude,
-      longitude: store.longitude,
-      address: store.address,
-      business_status: null,
-      google_maps_uri: store.google_maps_uri,
-      store_code: store.store_code,
-      phone: store.phone,
-      hours: store.hours,
-      city: store.city,
-      state: store.state,
-      verification_status: store.verification_status,
-      google_synced_at: null,
-    }));
     sendJson(response, 200, {
-      stores,
+      stores: localStores,
       meta: {
-        count: stores.length,
-        staleCount: stores.filter((store) => store.google_place_id).length,
-        locatorOnlyCount: stores.filter((store) => !store.google_place_id).length,
+        count: localStores.length,
+        staleCount: localStores.filter((store) => store.google_place_id).length,
+        locatorOnlyCount: localStores.filter((store) => !store.google_place_id).length,
         staleAfterDays: 30,
         latestSyncAt: null,
       },
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/sangeetha-stores") {
+    readJsonBody(request).then((body) => {
+      const store = {
+        id: nextLocalId++,
+        store_number: nextStoreNumber++,
+        google_place_id: null,
+        official_store_id: null,
+        data_source: "manual",
+        name: String(body.name || "").trim(),
+        latitude: Number(body.latitude),
+        longitude: Number(body.longitude),
+        address: String(body.address || "").trim() || null,
+        business_status: null,
+        google_maps_uri: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${body.latitude},${body.longitude}`)}`,
+        store_code: null,
+        phone: null,
+        hours: null,
+        city: String(body.city || "").trim() || null,
+        state: String(body.state || "").trim() || null,
+        verification_status: "manual",
+        store_sqft: body.storeSqft ? Number(String(body.storeSqft).replace(/[^\d]/g, "")) : null,
+        google_synced_at: null,
+      };
+      localStores = [...localStores, store];
+      sendJson(response, 201, { store });
+    }).catch((error) => {
+      sendJson(response, 500, { error: error.message });
+    });
+    return;
+  }
+
+  if (request.method === "PATCH" && url.pathname === "/api/sangeetha-stores") {
+    readJsonBody(request).then((body) => {
+      const storeId = Number(body.id);
+      const sqft = body.storeSqft === "" || body.storeSqft == null
+        ? null
+        : Number(String(body.storeSqft).replace(/[^\d]/g, ""));
+      const index = localStores.findIndex((store) => store.id === storeId);
+      if (index === -1) {
+        sendJson(response, 404, { error: "Store not found" });
+        return;
+      }
+      localStores[index] = {
+        ...localStores[index],
+        store_sqft: Number.isFinite(sqft) ? sqft : null,
+      };
+      sendJson(response, 200, { store: localStores[index] });
+    }).catch((error) => {
+      sendJson(response, 500, { error: error.message });
     });
     return;
   }

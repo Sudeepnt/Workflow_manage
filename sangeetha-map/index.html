@@ -15,15 +15,15 @@
           <img class="map-brand-logo" src="/sangeetha-map/assets/sangeetha-logo.png" alt="" aria-hidden="true" />
           <span>Store Map</span>
         </h1>
-        <div class="map-actions">
-          <button class="action-button" id="refresh-button" type="button" aria-label="Import or refresh stores">Refresh</button>
-        </div>
         <label class="region-control">
           <span class="sr-only">Region</span>
           <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
             <option value="">All India</option>
           </select>
         </label>
+        <div class="map-actions">
+          <button class="action-button" id="refresh-button" type="button" aria-label="Import or refresh stores">Refresh</button>
+        </div>
       </header>
 
       <div class="map-tools" aria-label="Map search and location controls">
@@ -33,24 +33,109 @@
         </button>
       </div>
 
+      <div class="map-modebar" aria-label="Store management tools">
+        <button class="mode-button" id="add-store-button" type="button">+ Add Store</button>
+        <button class="mode-button" id="area-button" type="button">Select Area</button>
+        <button class="mode-button" id="area-finish-button" type="button" hidden>Finish Area</button>
+        <button class="mode-button mode-button-secondary" id="area-clear-button" type="button" hidden>Clear Area</button>
+      </div>
+
       <section class="sr-only" id="status-card" aria-live="polite">
         <p class="status-label" id="status-label">Connecting…</p>
         <p class="status-detail" id="status-detail">Loading map configuration and cached store locations.</p>
       </section>
 
-      <section class="store-sheet" id="store-sheet" role="dialog" aria-labelledby="sheet-title" aria-live="polite" hidden>
+      <section class="store-sheet" id="store-sheet" role="dialog" aria-live="polite" hidden>
         <div class="sheet-handle" aria-hidden="true"></div>
         <button class="sheet-close" id="sheet-close" type="button" aria-label="Close store details">&times;</button>
-        <p class="sheet-kicker">Sangeetha Mobiles</p>
-        <h2 class="sheet-title" id="sheet-title">Store</h2>
-        <p class="sheet-address" id="sheet-address"></p>
-        <div class="sheet-actions">
-          <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">Open in Google Maps</a>
+
+        <div class="sheet-view" id="sheet-store-view">
+          <p class="sheet-kicker" id="sheet-kicker">Sangeetha Mobiles</p>
+          <h2 class="sheet-title" id="sheet-title">Store</h2>
+          <p class="sheet-meta" id="sheet-meta"></p>
+          <p class="sheet-address" id="sheet-address"></p>
+          <p class="sheet-coordinates" id="sheet-coordinates"></p>
+          <div class="sheet-actions">
+            <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">Open in Google Maps</a>
+          </div>
+
+          <form class="store-edit-form" id="sqft-form">
+            <label class="sheet-field">
+              <span>Store Sqft</span>
+              <input id="sqft-input" type="text" inputmode="numeric" placeholder="1850" autocomplete="off" />
+            </label>
+            <button class="sheet-save-button" id="sqft-save-button" type="submit">Save Sqft</button>
+          </form>
         </div>
+
+        <div class="sheet-view" id="sheet-add-view" hidden>
+          <p class="sheet-kicker">Manual Store</p>
+          <h2 class="sheet-title">Add a New Store</h2>
+          <form class="add-store-form" id="add-store-form">
+            <label class="sheet-field">
+              <span>Store Name</span>
+              <input id="add-store-name" type="text" required autocomplete="off" />
+            </label>
+            <div class="sheet-grid">
+              <label class="sheet-field">
+                <span>Latitude</span>
+                <input id="add-store-latitude" type="text" inputmode="decimal" required autocomplete="off" />
+              </label>
+              <label class="sheet-field">
+                <span>Longitude</span>
+                <input id="add-store-longitude" type="text" inputmode="decimal" required autocomplete="off" />
+              </label>
+            </div>
+            <label class="sheet-field">
+              <span>Address</span>
+              <textarea id="add-store-address" rows="3"></textarea>
+            </label>
+            <div class="sheet-grid">
+              <label class="sheet-field">
+                <span>City</span>
+                <input id="add-store-city" type="text" autocomplete="off" />
+              </label>
+              <label class="sheet-field">
+                <span>State</span>
+                <input id="add-store-state" type="text" autocomplete="off" />
+              </label>
+            </div>
+            <label class="sheet-field">
+              <span>Store Sqft</span>
+              <input id="add-store-sqft" type="text" inputmode="numeric" autocomplete="off" />
+            </label>
+            <button class="sheet-save-button" id="add-store-save-button" type="submit">Create Store</button>
+          </form>
+        </div>
+
+        <section class="selection-panel" id="proximity-panel" hidden>
+          <div class="selection-panel-header">
+            <h3>Stores Near This Point</h3>
+            <p id="proximity-origin-label"></p>
+          </div>
+          <div class="radius-options" id="radius-options">
+            <button class="radius-chip" type="button" data-radius-km="1">1 km</button>
+            <button class="radius-chip" type="button" data-radius-km="3">3 km</button>
+            <button class="radius-chip" type="button" data-radius-km="5">5 km</button>
+            <button class="radius-chip" type="button" data-radius-km="10">10 km</button>
+          </div>
+          <p class="selection-summary" id="proximity-summary"></p>
+          <ul class="selection-list" id="proximity-list"></ul>
+        </section>
+
+        <section class="selection-panel" id="area-panel" hidden>
+          <div class="selection-panel-header">
+            <h3>Selected Area</h3>
+            <p id="area-summary"></p>
+          </div>
+          <ul class="selection-list" id="area-list"></ul>
+        </section>
+
+        <p class="sheet-feedback" id="sheet-feedback" hidden></p>
       </section>
     </main>
 
     <script src="https://unpkg.com/@googlemaps/markerclusterer@2.6.2/dist/index.min.js" defer></script>
     <script src="/sangeetha-map/app.js" defer></script>
   </body>
-  </html>
+</html>
