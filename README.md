@@ -43,12 +43,12 @@ Database setup:
 
 Flow:
 
-- `npm run stores:discover` reads the current official Sangeetha store sitemap and builds a deduplicated Google Place ID seed file.
-- The checked-in seed currently contains 777 official store pages and 776 unique Google Place IDs across seven states/territories.
+- `npm run stores:discover` reads both official Sangeetha locators and builds a reconciled, deduplicated nationwide catalog.
+- The checked-in catalog contains 918 retail locations: 753 matched across the Google-backed directory and ecommerce locator, 142 ecommerce-locator-only records, and 23 Google-directory-only records.
 - `POST /api/sangeetha-stores/import` refreshes missing or older-than-30-days stores with Google Places API (New) Place Details in timeout-safe batches and upserts them into `sangeetha_stores`.
 - `GET /api/sangeetha-stores` reads cached store rows from Supabase.
 - `/sangeetha-map` loads Google Maps in the browser and renders markers from the cached Supabase data only.
 
-The official directory currently includes 766 Sangeetha-branded locations and 10 Wham-branded locations from the same Sangeetha group locator. One pair of official Chitradurga pages shares a Google Place ID, so it becomes one map record.
+The source API returned 930 records. Catalog generation excludes 21 warehouses/dark stores, eight exact duplicates, four internal/test entries, and two invalid coordinates, then unions the remaining records with the 776 unique Google Place IDs exposed by the official store directory.
 
 `GOOGLE_PLACES_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are server-only. Never expose either value to browser code.

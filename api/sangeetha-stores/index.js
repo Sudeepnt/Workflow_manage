@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     const supabase = getSupabaseReadClient();
     const { data, error } = await supabase
       .from("sangeetha_stores")
-      .select("id, google_place_id, name, latitude, longitude, address, business_status, google_maps_uri, google_synced_at, created_at, updated_at")
+      .select("id, google_place_id, official_store_id, name, latitude, longitude, address, business_status, google_maps_uri, store_code, phone, hours, city, state, verification_status, google_synced_at, created_at, updated_at")
       .order("name", { ascending: true });
 
     if (error) throw error;
@@ -31,9 +31,11 @@ module.exports = async function handler(req, res) {
     const rows = Array.isArray(data) ? data : [];
     const now = Date.now();
     const staleCount = rows.filter((row) => {
+      if (!row.google_place_id) return false;
       const syncedAt = Date.parse(row.google_synced_at ?? "");
       return !Number.isFinite(syncedAt) || (now - syncedAt) > STALE_MS;
     }).length;
+    const locatorOnlyCount = rows.filter((row) => !row.google_place_id).length;
     const latestSyncAt = getLatestSyncAt(rows);
 
     sendJson(res, 200, {
@@ -42,6 +44,7 @@ module.exports = async function handler(req, res) {
         count: rows.length,
         staleCount,
         staleAfterDays: STALE_DAYS,
+        locatorOnlyCount,
         latestSyncAt: latestSyncAt ? new Date(latestSyncAt).toISOString() : null,
       },
     });

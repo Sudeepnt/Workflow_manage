@@ -6,7 +6,7 @@ const path = require("node:path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8000;
-const seedData = require("../data/sangeetha-store-seeds.json");
+const catalogData = require("../data/sangeetha-store-catalog.json");
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -67,22 +67,30 @@ const server = http.createServer((request, response) => {
   }
 
   if (request.method === "GET" && url.pathname === "/api/sangeetha-stores") {
-    const stores = seedData.stores.map((store, index) => ({
+    const stores = catalogData.stores.map((store, index) => ({
       id: index + 1,
       google_place_id: store.google_place_id,
+      official_store_id: store.official_store_id,
       name: store.name,
       latitude: store.latitude,
       longitude: store.longitude,
       address: store.address,
       business_status: null,
       google_maps_uri: store.google_maps_uri,
+      store_code: store.store_code,
+      phone: store.phone,
+      hours: store.hours,
+      city: store.city,
+      state: store.state,
+      verification_status: store.verification_status,
       google_synced_at: null,
     }));
     sendJson(response, 200, {
       stores,
       meta: {
         count: stores.length,
-        staleCount: stores.length,
+        staleCount: stores.filter((store) => store.google_place_id).length,
+        locatorOnlyCount: stores.filter((store) => !store.google_place_id).length,
         staleAfterDays: 30,
         latestSyncAt: null,
       },

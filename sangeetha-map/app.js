@@ -116,9 +116,13 @@ function createPinNode(selected) {
   return pin;
 }
 
+function getStoreKey(store) {
+  return String(store.id ?? store.google_place_id ?? store.official_store_id);
+}
+
 function updateSelectedMarker() {
   state.markers.forEach((entry) => {
-    const selected = entry.store.google_place_id === state.selectedMarkerId;
+    const selected = getStoreKey(entry.store) === state.selectedMarkerId;
     entry.marker.content = createPinNode(selected);
   });
 }
@@ -138,8 +142,8 @@ function showStoreSheet(store) {
     return;
   }
 
-  state.selectedStoreId = store.google_place_id;
-  state.selectedMarkerId = store.google_place_id;
+  state.selectedStoreId = getStoreKey(store);
+  state.selectedMarkerId = getStoreKey(store);
   el.sheetTitle.textContent = `Sangeetha Mobiles - ${getStoreLocationName(store.name)}`;
   el.sheetAddress.textContent = store.address || "Address unavailable";
   el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
