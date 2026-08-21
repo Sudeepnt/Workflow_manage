@@ -595,8 +595,8 @@ async function showCurrentLocation() {
     };
     clearProximitySelection({ keepOrigin: true });
     setStatus("Current location", "Pick a radius to find stores around you.");
-    showSheetMode("location");
-    renderProximitySelection();
+    showSheetMode(null);
+    updateMapClearButtonVisibility();
   } catch (error) {
     const locationMessages = {
       1: "Allow location access in your browser to use this button.",
