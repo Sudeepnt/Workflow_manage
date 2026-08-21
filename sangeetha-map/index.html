@@ -24,16 +24,14 @@
           </label>
           <div class="map-actions">
             <button class="action-button action-icon-button" id="refresh-button" type="button" aria-label="Import or refresh stores" title="Refresh stores">
-              <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M20 6v5h-5M4 18v-5h5M18.2 9A7 7 0 0 0 6.6 6.8M5.8 15A7 7 0 0 0 17.4 17.2" />
-              </svg>
+              <i class="control-icon" data-lucide="refresh-cw" aria-hidden="true"></i>
             </button>
           </div>
         </header>
 
         <div class="map-tools" aria-label="Map search and location controls">
           <div class="city-search-card">
-            <span class="search-glyph" aria-hidden="true"></span>
+            <i class="search-icon" data-lucide="search" aria-hidden="true"></i>
             <div class="city-search-host" id="city-search-host">
               <input class="store-search-input" id="store-search-input" type="search" placeholder="Search store no or name" autocomplete="off" aria-label="Search store number or name" />
               <div class="store-search-results" id="store-search-results" hidden></div>
@@ -48,22 +46,20 @@
       </section>
 
       <button class="location-button" id="location-button" type="button" aria-label="Show my current location" title="My location">
-        <span class="location-glyph" aria-hidden="true"></span>
+        <i class="location-icon" data-lucide="locate-fixed" aria-hidden="true"></i>
       </button>
 
       <div class="map-modebar" aria-label="Store management tools">
         <button class="mode-button add-store-mode" id="add-store-button" type="button">
-          <span class="mode-icon mode-icon-plus" aria-hidden="true"></span>
+          <i class="mode-icon" data-lucide="plus" aria-hidden="true"></i>
           <span>Add Store</span>
         </button>
         <button class="mode-button area-mode is-primary" id="area-button" type="button">
-          <span class="mode-icon mode-icon-corners" aria-hidden="true"></span>
+          <i class="mode-icon" data-lucide="scan" aria-hidden="true"></i>
           <span>Select Area</span>
         </button>
         <button class="mode-button mode-button-clear" id="area-clear-button" type="button" aria-label="Clear area selection" title="Clear area" hidden>
-          <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
+          <i class="control-icon" data-lucide="x" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -75,9 +71,7 @@
       <section class="store-sheet" id="store-sheet" role="dialog" aria-live="polite" hidden>
         <div class="sheet-handle" aria-hidden="true"></div>
         <button class="sheet-close" id="sheet-close" type="button" aria-label="Close store details">
-          <svg class="control-icon" aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
+          <i class="control-icon" data-lucide="x" aria-hidden="true"></i>
         </button>
 
         <div class="sheet-view" id="sheet-store-view">
@@ -85,32 +79,21 @@
           <h2 class="sheet-title" id="sheet-title">Store</h2>
           <div class="sheet-detail-stack">
             <p class="sheet-meta detail-row">
-              <svg class="detail-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M4 10h16M6 10v9h12v-9M8 19v-5h4v5M5 10l1-5h12l1 5M9 5v5M15 5v5" />
-              </svg>
+              <i class="detail-icon" data-lucide="store" aria-hidden="true"></i>
               <span id="sheet-meta"></span>
             </p>
             <p class="sheet-address detail-row">
-              <svg class="detail-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" />
-                <circle cx="12" cy="10" r="2.6" />
-              </svg>
+              <i class="detail-icon" data-lucide="map-pin" aria-hidden="true"></i>
               <span id="sheet-address"></span>
             </p>
             <p class="sheet-coordinates detail-row">
-              <svg class="detail-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-              </svg>
+              <i class="detail-icon" data-lucide="crosshair" aria-hidden="true"></i>
               <span id="sheet-coordinates"></span>
             </p>
           </div>
           <div class="sheet-actions">
             <a class="sheet-link" id="sheet-link" href="#" target="_blank" rel="noreferrer">
-              <svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" />
-                <circle cx="12" cy="10" r="2.5" />
-              </svg>
+              <i class="button-icon" data-lucide="map-pin" aria-hidden="true"></i>
               <span>Open in Google Maps</span>
             </a>
           </div>
@@ -179,15 +162,11 @@
           </div>
           <div class="proximity-actions">
             <button class="proximity-action-button proximity-action-primary" id="proximity-done-button" type="button">
-              <svg class="button-icon" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M5 12.5 10 17l9-10" />
-              </svg>
+              <i class="button-icon" data-lucide="check" aria-hidden="true"></i>
               <span>Done</span>
             </button>
             <button class="proximity-action-button" id="proximity-clear-button" type="button">
-              <svg class="button-icon button-icon-danger" aria-hidden="true" viewBox="0 0 24 24">
-                <path d="M5 7h14M10 11v6M14 11v6M9 7V5h6v2M7 7l1 14h8l1-14" />
-              </svg>
+              <i class="button-icon button-icon-danger" data-lucide="trash-2" aria-hidden="true"></i>
               <span>Clear</span>
             </button>
           </div>
@@ -208,6 +187,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer@2.6.2/dist/index.min.js" defer></script>
     <script src="/sangeetha-map/app.js" defer></script>
   </body>

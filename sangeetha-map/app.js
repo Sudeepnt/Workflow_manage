@@ -94,6 +94,18 @@ const el = {
 
 let mapsLoaderPromise = null;
 
+function renderIconSet(root = document) {
+  if (!globalThis.lucide?.createIcons) return;
+  globalThis.lucide.createIcons({
+    attrs: {
+      "stroke-width": 1.55,
+      "aria-hidden": "true",
+    },
+    nameAttr: "data-lucide",
+    root,
+  });
+}
+
 function setStatus(label, detail = "") {
   el.statusLabel.textContent = label;
   el.statusDetail.textContent = detail;
@@ -795,7 +807,8 @@ function createAreaDeleteNode() {
   const node = document.createElement("button");
   node.type = "button";
   node.className = "area-delete-pin";
-  node.textContent = "×";
+  node.innerHTML = '<i data-lucide="x" aria-hidden="true"></i>';
+  renderIconSet(node);
   return node;
 }
 
@@ -1451,6 +1464,8 @@ function bindEvents() {
 }
 
 async function init() {
+  renderIconSet();
+  window.addEventListener("load", () => renderIconSet(), { once: true });
   bindEvents();
   setLoadingState(true);
 
