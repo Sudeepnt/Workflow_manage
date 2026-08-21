@@ -1,6 +1,7 @@
 const state = {
   config: null,
   clusterer: null,
+  initialViewApplied: false,
   map: null,
   markers: [],
   selectedRegion: "",
@@ -282,6 +283,10 @@ async function loadStores() {
 
   const payload = await fetchJson("/api/sangeetha-stores");
   state.stores = Array.isArray(payload.stores) ? payload.stores : [];
+  if (!state.initialViewApplied) {
+    state.selectedRegion = "";
+    state.initialViewApplied = true;
+  }
   populateRegionFilter(state.stores);
   await applyRegionFilter();
   if (state.stores.length) {
