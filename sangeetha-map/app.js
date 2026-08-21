@@ -1020,7 +1020,7 @@ function clearInteractiveSelections() {
 
 function renderProximitySelection() {
   if (!state.proximityOrigin) {
-    el.proximitySummary.textContent = "Tap a store or use location first.";
+    el.proximitySummary.textContent = "";
     el.proximityOriginLabel.textContent = "";
     el.proximityList.replaceChildren();
     setActiveRadiusChip();
@@ -1029,14 +1029,14 @@ function renderProximitySelection() {
 
   el.proximityOriginLabel.textContent = state.proximityOrigin.label;
   if (state.proximityPendingRadiusKm && state.proximityPendingRadiusKm !== state.proximityRadiusKm) {
-    el.proximitySummary.textContent = `${state.proximityPendingRadiusKm} km selected. Tap Done to draw the radius.`;
+    el.proximitySummary.textContent = `${state.proximityPendingRadiusKm} km selected`;
     el.proximityList.replaceChildren();
     setActiveRadiusChip();
     return;
   }
 
   if (!state.proximityRadiusKm) {
-    el.proximitySummary.textContent = "Choose 1 km, 3 km, 5 km, or 10 km, then tap Done.";
+    el.proximitySummary.textContent = "";
     el.proximityList.replaceChildren();
     setActiveRadiusChip();
     return;
@@ -1097,7 +1097,7 @@ function commitProximityRadius() {
   if (!state.proximityOrigin) return;
   const radiusKm = state.proximityPendingRadiusKm || state.proximityRadiusKm;
   if (!radiusKm) {
-    el.proximitySummary.textContent = "Choose a distance first, then tap Done.";
+    el.proximitySummary.textContent = "Select distance";
     return;
   }
   applyProximityRadius(radiusKm);

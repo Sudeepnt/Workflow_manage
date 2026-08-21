@@ -3,12 +3,12 @@
   --bg: #eef2f7;
   --panel: rgba(255, 255, 255, 0.94);
   --panel-border: rgba(18, 32, 59, 0.1);
-  --ink: #10213b;
-  --muted: #61708b;
-  --accent: #111111;
+  --ink: #18243a;
+  --muted: #6b7890;
+  --accent: #2f6df6;
   --accent-contrast: #f8fafc;
-  --blue: #1f5eff;
-  --blue-deep: #1036a6;
+  --blue: #2563eb;
+  --blue-deep: #1d4ed8;
   --orange: #ff8b2b;
   --red: #d93025;
   --shadow: 0 18px 44px rgba(16, 33, 59, 0.15);
@@ -150,6 +150,12 @@ textarea {
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.action-icon-button {
+  background: #eef4ff;
+  color: #2456c9;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
 }
 
 .action-button:disabled,
@@ -412,11 +418,11 @@ textarea {
   height: 34px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #111827;
-  color: #fff;
+  background: #f8fafc;
+  color: #334155;
   font-size: 0.84rem;
-  font-weight: 800;
-  box-shadow: 0 10px 22px rgba(17, 24, 39, 0.28);
+  font-weight: 750;
+  box-shadow: 0 10px 22px rgba(82, 98, 122, 0.18);
 }
 
 .area-badge.is-active {
@@ -517,8 +523,8 @@ textarea {
   border-radius: 26px;
   max-height: min(82dvh, 720px);
   overflow: auto;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 24px 70px rgba(16, 33, 59, 0.22);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 56px rgba(82, 98, 122, 0.2);
 }
 
 .sheet-handle {
@@ -530,7 +536,7 @@ textarea {
   margin: 0;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(16, 33, 59, 0.12);
+  background: rgba(107, 120, 144, 0.22);
 }
 
 .sheet-close {
@@ -541,9 +547,9 @@ textarea {
   height: 46px;
   border: none;
   border-radius: 999px;
-  background: #eef0f4;
-  color: #10213b;
-  font-size: 2rem;
+  background: #f2f5f9;
+  color: #334155;
+  font-size: 1.65rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -551,19 +557,19 @@ textarea {
 .sheet-kicker {
   margin: 0;
   padding-right: 56px;
-  color: #52617a;
+  color: #7a8599;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .sheet-title {
   margin: 6px 54px 0 0;
-  color: #10213b;
-  font-size: clamp(1.78rem, 7.1vw, 2.35rem);
-  line-height: 1.04;
-  letter-spacing: -0.045em;
+  color: #1d293d;
+  font-size: clamp(1.7rem, 6.6vw, 2.2rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 
 .sheet-meta,
@@ -585,92 +591,33 @@ textarea {
 
 .detail-row {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 13px;
   align-items: start;
   margin: 0;
-  color: #55627c;
-  font-size: 0.98rem;
+  color: #647086;
+  font-size: 0.96rem;
   line-height: 1.42;
 }
 
 .detail-icon {
-  position: relative;
   display: block;
-  width: 28px;
-  height: 28px;
-  color: #0f1f39;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: #475569;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.detail-icon-store {
-  border: 2px solid currentColor;
-  border-radius: 3px 3px 4px 4px;
-  margin-top: 2px;
-}
-
-.detail-icon-store::before {
-  content: "";
-  position: absolute;
-  left: -3px;
-  right: -3px;
-  top: -8px;
-  height: 9px;
-  border: 2px solid currentColor;
-  border-bottom: 0;
-  border-radius: 5px 5px 2px 2px;
-}
-
-.detail-icon-store::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  bottom: 0;
-  width: 7px;
-  height: 10px;
-  border-left: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-}
-
-.detail-icon-map {
-  border: 2px solid currentColor;
-  border-radius: 999px 999px 999px 0;
-  transform: rotate(-45deg) scale(0.9);
-}
-
-.detail-icon-map::after {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  border: 2px solid currentColor;
-  border-radius: 999px;
-}
-
-.detail-icon-target {
-  border: 2px solid currentColor;
-  border-radius: 999px;
-}
-
-.detail-icon-target::before,
-.detail-icon-target::after {
-  content: "";
-  position: absolute;
-  background: currentColor;
-}
-
-.detail-icon-target::before {
-  left: 50%;
-  top: -5px;
-  width: 2px;
-  height: 36px;
-  transform: translateX(-50%);
-}
-
-.detail-icon-target::after {
-  top: 50%;
-  left: -5px;
-  width: 36px;
-  height: 2px;
-  transform: translateY(-50%);
+.detail-icon circle,
+.detail-icon path,
+.button-icon circle,
+.button-icon path {
+  fill: none;
 }
 
 .sheet-actions {
@@ -685,31 +632,24 @@ textarea {
 }
 
 .sheet-link {
-  min-height: 58px;
-  gap: 14px;
+  min-height: 54px;
+  gap: 10px;
   border-radius: 14px;
-  background: var(--blue);
+  background: #2f6df6;
   color: #fff;
-  font-size: 1.02rem;
-  font-weight: 800;
-  box-shadow: 0 14px 30px rgba(31, 94, 255, 0.24);
+  font-size: 0.98rem;
+  font-weight: 720;
+  box-shadow: 0 12px 26px rgba(47, 109, 246, 0.18);
 }
 
-.maps-pin-icon {
-  position: relative;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px 999px 999px 0;
-  background: #fff;
-  transform: rotate(-45deg);
-}
-
-.maps-pin-icon::after {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  border-radius: 999px;
-  background: var(--blue);
+.button-icon {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .store-edit-form,
@@ -721,7 +661,7 @@ textarea {
 .store-edit-form,
 .selection-panel {
   padding-top: 18px;
-  border-top: 1px solid rgba(16, 33, 59, 0.12);
+  border-top: 1px solid rgba(100, 116, 139, 0.16);
 }
 
 .sheet-field {
@@ -732,8 +672,8 @@ textarea {
 }
 
 .sheet-field span {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 650;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -756,18 +696,18 @@ textarea {
   border: 1px solid rgba(16, 33, 59, 0.1);
   border-radius: 16px;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(248, 250, 252, 0.95);
   color: var(--ink);
 }
 
 .sheet-save-button {
   min-height: 52px;
-  border: 1px solid var(--blue);
+  border: 1px solid rgba(37, 99, 235, 0.55);
   border-radius: 14px;
   background: #fff;
   color: var(--blue-deep);
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 .sheet-grid {
@@ -778,10 +718,11 @@ textarea {
 
 .selection-panel-header h3 {
   margin: 0;
-  color: #394967;
+  color: #536078;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .radius-options {
@@ -794,10 +735,10 @@ textarea {
 .radius-chip {
   min-height: 48px;
   padding: 0 10px;
-  background: #edf3ff;
-  color: var(--blue-deep);
-  font-size: 0.94rem;
-  font-weight: 700;
+  background: #eef4ff;
+  color: #2456c9;
+  font-size: 0.92rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -819,7 +760,7 @@ textarea {
   gap: 12px;
   margin-top: 18px;
   padding-top: 16px;
-  border-top: 1px solid rgba(16, 33, 59, 0.12);
+  border-top: 1px solid rgba(100, 116, 139, 0.16);
 }
 
 .proximity-action-button {
@@ -828,56 +769,23 @@ textarea {
   justify-content: center;
   gap: 12px;
   min-height: 52px;
-  border: 1px solid rgba(16, 33, 59, 0.32);
+  border: 1px solid rgba(100, 116, 139, 0.28);
   border-radius: 14px;
   background: #fff;
-  color: #111827;
-  font-size: 0.98rem;
-  font-weight: 800;
+  color: #22304a;
+  font-size: 0.96rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .proximity-action-primary {
   background: #fff;
-  color: #111827;
-  border-color: rgba(16, 33, 59, 0.32);
+  color: #22304a;
+  border-color: rgba(100, 116, 139, 0.28);
 }
 
-.action-check {
-  color: #10213b;
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-.action-trash {
-  position: relative;
-  width: 16px;
-  height: 18px;
-  border: 2px solid #e0312b;
-  border-top: 0;
-  border-radius: 0 0 3px 3px;
-}
-
-.action-trash::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: -4px;
-  width: 20px;
-  height: 2px;
-  background: #e0312b;
-}
-
-.action-trash::after {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: 4px;
-  width: 8px;
-  height: 4px;
-  border: 2px solid #e0312b;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
+.button-icon-danger {
+  color: #ef4444;
 }
 
 .selection-list {
@@ -940,8 +848,8 @@ textarea {
 }
 
 .store-pin.is-selected {
-  background: linear-gradient(180deg, #10213b 0%, #0a1220 100%);
-  box-shadow: 0 14px 28px rgba(10, 18, 32, 0.28);
+  background: linear-gradient(180deg, #4f8cff 0%, #2456c9 100%);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
 }
 
 .store-pin.is-nearby {
@@ -959,11 +867,11 @@ textarea {
   height: 44px;
   padding: 0 12px;
   border-radius: 999px;
-  background: rgba(16, 33, 59, 0.92);
-  color: #fff;
+  background: rgba(248, 250, 252, 0.96);
+  color: #2456c9;
   font-size: 0.9rem;
-  font-weight: 800;
-  box-shadow: 0 12px 26px rgba(16, 33, 59, 0.25);
+  font-weight: 750;
+  box-shadow: 0 12px 26px rgba(82, 98, 122, 0.18);
 }
 
 .user-location-marker {
