@@ -18,6 +18,7 @@ const el = {
   statusLabel: document.getElementById("status-label"),
   statusDetail: document.getElementById("status-detail"),
   storeSheet: document.getElementById("store-sheet"),
+  sheetClose: document.getElementById("sheet-close"),
   sheetTitle: document.getElementById("sheet-title"),
   sheetAddress: document.getElementById("sheet-address"),
   sheetLink: document.getElementById("sheet-link"),
@@ -348,6 +349,10 @@ async function refreshStores() {
 
 function bindEvents() {
   el.refreshButton.addEventListener("click", refreshStores);
+  el.sheetClose.addEventListener("click", () => showStoreSheet(null));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !el.storeSheet.hidden) showStoreSheet(null);
+  });
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;
     try {

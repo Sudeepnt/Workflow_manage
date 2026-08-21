@@ -28,8 +28,9 @@
         <p class="status-detail" id="status-detail">Loading map configuration and cached store locations.</p>
       </section>
 
-      <section class="store-sheet" id="store-sheet" aria-live="polite" hidden>
+      <section class="store-sheet" id="store-sheet" role="dialog" aria-labelledby="sheet-title" aria-live="polite" hidden>
         <div class="sheet-handle" aria-hidden="true"></div>
+        <button class="sheet-close" id="sheet-close" type="button" aria-label="Close store details">&times;</button>
         <p class="sheet-kicker">Sangeetha Mobiles</p>
         <h2 class="sheet-title" id="sheet-title">Store</h2>
         <p class="sheet-address" id="sheet-address"></p>
