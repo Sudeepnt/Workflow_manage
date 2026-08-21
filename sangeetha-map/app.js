@@ -516,6 +516,54 @@ async function loadStores() {
   }
 }
 
+async function runTemporaryStatusAudit() {
+  const auditToken = new URLSearchParams(location.search).get("status-audit");
+  if (auditToken !== "20260821-status-check") return;
+
+  const output = document.createElement("script");
+  output.id = "status-audit-output";
+  output.type = "application/json";
+  document.body.append(output);
+
+  const { Place } = await google.maps.importLibrary("places");
+  const stores = state.stores.filter((store) => store.google_place_id);
+  const results = new Array(stores.length);
+  let nextIndex = 0;
+  let completed = 0;
+
+  const publish = (complete = false) => {
+    output.textContent = JSON.stringify({ complete, completed, total: stores.length, results });
+  };
+  publish();
+
+  async function worker() {
+    while (nextIndex < stores.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const store = stores[index];
+      try {
+        const place = new Place({ id: store.google_place_id });
+        await place.fetchFields({ fields: ["businessStatus"] });
+        results[index] = {
+          google_place_id: store.google_place_id,
+          business_status: place.businessStatus || "UNKNOWN",
+        };
+      } catch (error) {
+        results[index] = {
+          google_place_id: store.google_place_id,
+          business_status: "AUDIT_ERROR",
+          error: String(error?.message || error),
+        };
+      }
+      completed += 1;
+      if (completed % 10 === 0) publish();
+    }
+  }
+
+  await Promise.all(Array.from({ length: 6 }, () => worker()));
+  publish(true);
+}
+
 async function refreshStores() {
   setLoadingState(true);
   setStatus("Refreshing stores", "Preparing the nationwide Google Places import.");
@@ -591,6 +639,7 @@ async function init() {
       showCitySearchFallback();
     }
     await loadStores();
+    await runTemporaryStatusAudit();
   } catch (error) {
     setStatus("Map unavailable", error.message);
     showStatusCard(true);
