@@ -56,6 +56,14 @@ function getAreaCentroid(points) {
   };
 }
 
+function getAreaWriteClient() {
+  try {
+    return getSupabaseAdminClient();
+  } catch (error) {
+    return getSupabaseReadClient();
+  }
+}
+
 async function listAreas(res) {
   const supabase = getSupabaseReadClient();
   const { data, error } = await supabase
@@ -86,12 +94,7 @@ async function saveArea(req, res) {
   };
 
   const areaId = Number.parseInt(String(body.id ?? ""), 10);
-  let supabase;
-  try {
-    supabase = getSupabaseAdminClient();
-  } catch (error) {
-    supabase = getSupabaseReadClient();
-  }
+  const supabase = getAreaWriteClient();
   const query = Number.isFinite(areaId) && areaId > 0
     ? supabase.from("sangeetha_store_areas").update(payload).eq("id", areaId).select(AREA_COLUMNS).single()
     : supabase.from("sangeetha_store_areas").insert(payload).select(AREA_COLUMNS).single();
@@ -101,6 +104,28 @@ async function saveArea(req, res) {
 
   sendJson(res, Number.isFinite(areaId) && areaId > 0 ? 200 : 201, {
     area: data,
+  });
+}
+
+async function deleteArea(req, res) {
+  const body = await readJsonBody(req);
+  const areaId = Number.parseInt(String(body.id ?? ""), 10);
+  if (!Number.isFinite(areaId) || areaId <= 0) {
+    throw new Error("Area id is required.");
+  }
+
+  const supabase = getAreaWriteClient();
+  const { data, error } = await supabase
+    .from("sangeetha_store_areas")
+    .delete()
+    .eq("id", areaId)
+    .select("id, area_number, name")
+    .single();
+
+  if (error) throw error;
+
+  sendJson(res, 200, {
+    deletedArea: data,
   });
 }
 
@@ -114,8 +139,12 @@ module.exports = async function handler(req, res) {
       await saveArea(req, res);
       return;
     }
+    if (req.method === "DELETE") {
+      await deleteArea(req, res);
+      return;
+    }
 
-    allowMethods(res, ["GET", "POST", "PATCH"]);
+    allowMethods(res, ["GET", "POST", "PATCH", "DELETE"]);
     sendJson(res, 405, { error: "Method not allowed" });
   } catch (error) {
     sendJson(res, 500, {

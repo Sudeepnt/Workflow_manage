@@ -57,6 +57,7 @@ const el = {
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
   areaClearButton: document.getElementById("area-clear-button"),
+  areaDeleteButton: document.getElementById("area-delete-button"),
   areaDrawFrame: document.getElementById("area-draw-frame"),
   areaList: document.getElementById("area-list"),
   areaPanel: document.getElementById("area-panel"),
@@ -183,6 +184,7 @@ function hasClearableMapActions() {
 function updateMapClearButtonVisibility() {
   const visible = hasClearableMapActions();
   el.mapModebar.classList.toggle("has-clear", visible);
+  el.mapModebar.classList.toggle("is-editing-area", Boolean(state.areaMode && state.areaDraftId));
   el.areaClearButton.hidden = !visible;
 }
 
@@ -191,7 +193,10 @@ function setAreaModeUi(active) {
   el.areaDrawFrame.hidden = !active;
   el.areaButton.classList.toggle("is-active", active);
   el.areaButton.classList.toggle("is-primary", !active);
+  el.areaDeleteButton.hidden = !(active && state.areaDraftId);
+  el.savedAreasToggle.hidden = active;
   el.addStoreButton.disabled = active;
+  el.areaDeleteButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
   el.locationButton.disabled = active;
   el.refreshButton.disabled = active || state.loading;
@@ -560,6 +565,8 @@ function clearAreaSelection() {
   state.areaSelectedIds = new Set();
   state.areaDraftId = null;
   state.areaDraftName = "";
+  state.areaPromptOpen = false;
+  state.areaSaveInFlight = false;
   clearAreaVertexMarkers();
   if (state.areaPolygon) {
     state.areaPolygon.setMap(null);
@@ -1136,6 +1143,32 @@ function finishAreaSelection() {
   return saveAreaSelection();
 }
 
+async function deleteAreaSelection() {
+  if (!state.areaDraftId || state.areaSaveInFlight || state.areaPromptOpen) return;
+  const name = state.areaDraftName || "this boundary";
+  if (!window.confirm(`Delete "${name}" boundary?`)) return;
+
+  state.areaSaveInFlight = true;
+  setAreaModeUi(true);
+  try {
+    await fetchJson("/api/sangeetha-store-areas", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: state.areaDraftId }),
+    });
+    clearAreaSelection();
+    await loadAreas();
+    setMapHelper("Area Deleted", `"${name}" was removed.`);
+  } catch (error) {
+    setMapHelper("Area Delete Failed", error.message || "Could not delete this boundary.");
+  } finally {
+    state.areaSaveInFlight = false;
+    setAreaModeUi(state.areaMode);
+  }
+}
+
 function clearInteractiveSelections() {
   clearCityBoundary();
   clearProximitySelection();
@@ -1556,6 +1589,7 @@ function bindEvents() {
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
   el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
+  el.areaDeleteButton.addEventListener("click", deleteAreaSelection);
   el.areaButton.addEventListener("click", async () => {
     if (state.areaMode) {
       await finishAreaSelection();

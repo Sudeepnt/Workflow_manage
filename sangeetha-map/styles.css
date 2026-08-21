@@ -366,8 +366,16 @@ textarea {
   box-shadow: 0 18px 44px rgba(16, 33, 59, 0.18);
 }
 
+.map-modebar.is-editing-area {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 0.9fr);
+}
+
 .map-modebar.has-clear {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr) 54px;
+}
+
+.map-modebar.is-editing-area.has-clear {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) minmax(0, 0.8fr) 54px;
 }
 
 .mode-button-clear {
@@ -520,6 +528,12 @@ textarea {
   color: #6f7b91;
   background: rgba(244, 247, 252, 0.94);
   border-color: rgba(16, 33, 59, 0.08);
+}
+
+.area-boundary-delete {
+  color: #c42b22;
+  border-color: rgba(217, 48, 37, 0.2);
+  background: rgba(254, 242, 242, 0.94);
 }
 
 .mode-icon {
@@ -1014,8 +1028,16 @@ textarea {
     border-radius: 22px;
   }
 
+  .map-modebar.is-editing-area {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.12fr) minmax(0, 0.74fr);
+  }
+
   .map-modebar.has-clear {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr) minmax(0, 0.72fr) 44px;
+  }
+
+  .map-modebar.is-editing-area.has-clear {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.06fr) minmax(0, 0.68fr) 44px;
   }
 
   .mode-button-clear {

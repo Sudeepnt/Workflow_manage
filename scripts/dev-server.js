@@ -236,6 +236,28 @@ const server = http.createServer((request, response) => {
     return;
   }
 
+  if (request.method === "DELETE" && url.pathname === "/api/sangeetha-store-areas") {
+    readJsonBody(request).then((body) => {
+      const areaId = Number(body.id);
+      const existingIndex = localAreas.findIndex((area) => area.id === areaId);
+      if (existingIndex === -1) {
+        sendJson(response, 404, { error: "Area not found" });
+        return;
+      }
+      const [area] = localAreas.splice(existingIndex, 1);
+      sendJson(response, 200, {
+        deletedArea: {
+          id: area.id,
+          area_number: area.area_number,
+          name: area.name,
+        },
+      });
+    }).catch((error) => {
+      sendJson(response, 500, { error: error.message });
+    });
+    return;
+  }
+
   if (url.pathname === "/api/sangeetha-stores/import") {
     sendJson(response, 503, {
       error: "Google Places refresh is only available with server credentials.",
