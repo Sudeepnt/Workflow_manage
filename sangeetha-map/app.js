@@ -125,6 +125,14 @@ function createPinNode(selected) {
   return pin;
 }
 
+function createClusterNode(count) {
+  const cluster = document.createElement("div");
+  cluster.className = "store-cluster";
+  cluster.textContent = String(count);
+  cluster.setAttribute("aria-label", `${count} stores`);
+  return cluster;
+}
+
 function getStoreKey(store) {
   return String(store.id ?? store.google_place_id ?? store.official_store_id);
 }
@@ -202,6 +210,14 @@ async function renderMarkers(stores) {
     state.clusterer = new markerClusterer.MarkerClusterer({
       map,
       markers: state.markers.map((entry) => entry.marker),
+      renderer: {
+        render: ({ count, position }) => new google.maps.marker.AdvancedMarkerElement({
+          position,
+          content: createClusterNode(count),
+          title: `Cluster of ${count} stores`,
+          zIndex: 1_000_000 + count,
+        }),
+      },
     });
   } else {
     state.markers.forEach((entry) => {
