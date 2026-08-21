@@ -309,6 +309,33 @@ textarea {
   display: none;
 }
 
+.map-helper-card {
+  position: relative;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(16, 33, 59, 0.92);
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(16, 33, 59, 0.2);
+}
+
+.map-helper-title,
+.map-helper-text {
+  margin: 0;
+}
+
+.map-helper-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.map-helper-text {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .mode-button {
   flex: 0 0 auto;
   min-height: 38px;

@@ -52,6 +52,9 @@ const el = {
   citySearchHost: document.getElementById("city-search-host"),
   locationButton: document.getElementById("location-button"),
   map: document.getElementById("map"),
+  mapHelperCard: document.getElementById("map-helper-card"),
+  mapHelperText: document.getElementById("map-helper-text"),
+  mapHelperTitle: document.getElementById("map-helper-title"),
   proximityList: document.getElementById("proximity-list"),
   proximityOriginLabel: document.getElementById("proximity-origin-label"),
   proximityPanel: document.getElementById("proximity-panel"),
@@ -83,6 +86,18 @@ let mapsLoaderPromise = null;
 function setStatus(label, detail = "") {
   el.statusLabel.textContent = label;
   el.statusDetail.textContent = detail;
+}
+
+function setMapHelper(title, text) {
+  if (!title || !text) {
+    el.mapHelperCard.hidden = true;
+    el.mapHelperTitle.textContent = "";
+    el.mapHelperText.textContent = "";
+    return;
+  }
+  el.mapHelperCard.hidden = false;
+  el.mapHelperTitle.textContent = title;
+  el.mapHelperText.textContent = text;
 }
 
 function showStatusCard(visible) {
@@ -402,6 +417,7 @@ function clearAreaSelection() {
   el.areaFinishButton.hidden = true;
   el.areaClearButton.hidden = true;
   el.areaButton.classList.remove("is-active");
+  setMapHelper("", "");
   updateMarkerStyles();
 }
 
@@ -637,6 +653,10 @@ function applyAreaSelection() {
   renderStoreList(el.areaList, selectedStores);
   showSheetMode(state.sheetMode === "add" ? "add" : (state.selectedStoreId ? "store" : "location"));
   el.areaPanel.hidden = !selectedStores.length;
+  setMapHelper(
+    "Area Selected",
+    `${selectedStores.length} ${selectedStores.length === 1 ? "store is" : "stores are"} inside this boundary.`,
+  );
   updateMarkerStyles();
 }
 
@@ -645,6 +665,10 @@ function startAreaSelection() {
   clearProximitySelection();
   clearAreaSelection();
   setStatus("Select area", "Tap around the map to draw a polygon, then finish the area.");
+  setMapHelper(
+    "Select Area",
+    "Tap the map to drop boundary points. When the shape is ready, tap Finish Area.",
+  );
   el.areaButton.classList.add("is-active");
   el.areaFinishButton.hidden = false;
   el.areaClearButton.hidden = false;
@@ -670,6 +694,11 @@ function startAreaSelection() {
     } else {
       state.areaPolygon.setPaths(state.areaPath);
     }
+
+    setMapHelper(
+      "Select Area",
+      `${state.areaPath.length} point${state.areaPath.length === 1 ? "" : "s"} added. Tap more points or tap Finish Area.`,
+    );
   });
 }
 
@@ -677,6 +706,7 @@ function finishAreaSelection() {
   if (state.areaPath.length < 3 || !state.areaPolygon) {
     setStatus("Area incomplete", "Add at least three points to finish the selection.");
     showStatusCard(true);
+    setMapHelper("Area Incomplete", "Add at least 3 boundary points, then tap Finish Area.");
     return;
   }
   if (state.areaClickListener) {
