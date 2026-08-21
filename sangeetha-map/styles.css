@@ -200,7 +200,7 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 50% 50% 50% 0;
-  background: #111;
+  background: #f05a0b;
   border: 2px solid #fff;
   transform: translateY(-5px) rotate(-45deg);
   transform-origin: center;
@@ -220,7 +220,7 @@ body {
 
 .store-pin.is-selected {
   transform: translateY(-5px) rotate(-45deg) scale(1.18);
-  background: #b91c1c;
+  background: #b93408;
 }
 
 @media (min-width: 900px) {
