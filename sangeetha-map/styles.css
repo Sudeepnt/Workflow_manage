@@ -851,9 +851,9 @@ textarea {
 
 .store-pin {
   position: relative;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border: none;
   border-radius: 999px;
   background: linear-gradient(180deg, #3f7fff 0%, #1f5eff 100%);
@@ -865,9 +865,9 @@ textarea {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -7px;
-  width: 12px;
-  height: 12px;
+  bottom: -4px;
+  width: 7px;
+  height: 7px;
   background: inherit;
   clip-path: polygon(50% 100%, 0 0, 100% 0);
   transform: translateX(-50%);
@@ -879,8 +879,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  font-size: 0.8rem;
+  min-width: 10px;
+  font-size: 0.4rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
