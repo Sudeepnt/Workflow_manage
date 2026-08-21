@@ -85,8 +85,13 @@ async function saveArea(req, res) {
       : centroid.lng,
   };
 
-  const supabase = getSupabaseAdminClient();
   const areaId = Number.parseInt(String(body.id ?? ""), 10);
+  let supabase;
+  try {
+    supabase = getSupabaseAdminClient();
+  } catch (error) {
+    supabase = getSupabaseReadClient();
+  }
   const query = Number.isFinite(areaId) && areaId > 0
     ? supabase.from("sangeetha_store_areas").update(payload).eq("id", areaId).select(AREA_COLUMNS).single()
     : supabase.from("sangeetha_store_areas").insert(payload).select(AREA_COLUMNS).single();

@@ -9,6 +9,7 @@ const state = {
   areaOverlays: [],
   areaPath: [],
   areaPolygon: null,
+  areaPromptOpen: false,
   areaSaveInFlight: false,
   areaSelectedIds: new Set(),
   areaVertexMarkers: [],
@@ -148,6 +149,10 @@ function setAreaButtonLabel(label) {
 }
 
 function refreshAreaButtonLabel() {
+  if (state.areaPromptOpen) {
+    setAreaButtonLabel("Naming...");
+    return;
+  }
   if (state.areaSaveInFlight) {
     setAreaButtonLabel("Saving...");
     return;
@@ -192,7 +197,7 @@ function setAreaModeUi(active) {
   el.refreshButton.disabled = active || state.loading;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
-  el.areaButton.disabled = state.areaSaveInFlight;
+  el.areaButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   refreshAreaButtonLabel();
   updateMapClearButtonVisibility();
 }
@@ -306,6 +311,16 @@ function formatSqft(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) return "Not set";
   return `${number.toLocaleString("en-IN")} sqft`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  }[char]));
 }
 
 function clearCityBoundary() {
@@ -820,12 +835,13 @@ function applyAreaSelection() {
   updateMarkerStyles();
 }
 
-function createAreaBadgeNode(areaNumber, active = false) {
+function createAreaBadgeNode(areaNumber, name, active = false) {
   const node = document.createElement("div");
   node.className = `area-center-pin${active ? " is-active" : ""}`;
+  node.title = name ? `Area ${areaNumber}: ${name}` : `Area ${areaNumber}`;
   node.innerHTML = `
     <span class="area-center-pin-dot">${areaNumber}</span>
-    <span class="area-center-pin-label">Area</span>
+    <span class="area-center-pin-label">${escapeHtml(name || "Area")}</span>
   `;
   return node;
 }
@@ -928,7 +944,7 @@ function renderSavedAreas() {
     const badge = new google.maps.marker.AdvancedMarkerElement({
       map: state.map,
       position: center,
-      content: createAreaBadgeNode(area.area_number, state.areaDraftId === area.id),
+      content: createAreaBadgeNode(area.area_number, area.name, state.areaDraftId === area.id),
       title: `Area ${area.area_number}: ${area.name}`,
       zIndex: 2500,
     });
@@ -1071,7 +1087,11 @@ async function saveAreaSelection() {
     return;
   }
 
+  state.areaPromptOpen = true;
+  setAreaModeUi(true);
   const name = window.prompt("Enter a mark name for this area", state.areaDraftName || "");
+  state.areaPromptOpen = false;
+  setAreaModeUi(true);
   if (name == null) return;
   const trimmedName = name.trim();
   if (!trimmedName) {
