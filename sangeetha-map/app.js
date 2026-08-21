@@ -10,6 +10,13 @@ const state = {
   selectedMarkerId: null,
 };
 
+const INDIA_BOUNDS = {
+  south: 6.4,
+  west: 68,
+  north: 37.6,
+  east: 97.6,
+};
+
 const el = {
   map: document.getElementById("map"),
   refreshButton: document.getElementById("refresh-button"),
@@ -92,8 +99,8 @@ async function ensureMap() {
   const { Map } = await google.maps.importLibrary("maps");
 
   state.map = new Map(el.map, {
-    center: { lat: 12.9716, lng: 77.5946 },
-    zoom: 11,
+    center: { lat: 22.6, lng: 78.9 },
+    zoom: 4,
     mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
     fullscreenControl: false,
     mapTypeControl: false,
@@ -227,6 +234,16 @@ async function renderMarkers(stores) {
     showStoreSheet(null);
     setStatus("No stores found", "Run an import to populate the map.");
     showStatusCard(true);
+    return;
+  }
+
+  if (!state.selectedRegion) {
+    map.fitBounds(INDIA_BOUNDS, {
+      top: 96,
+      right: 28,
+      bottom: 28,
+      left: 28,
+    });
     return;
   }
 
