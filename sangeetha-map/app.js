@@ -928,7 +928,7 @@ function showSheetMode(mode) {
   el.storeSheet.classList.toggle("is-add-mode", state.sheetMode === "add");
   el.sheetStoreView.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
   el.addStoreView.hidden = state.sheetMode !== "add";
-  el.proximityPanel.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
+  el.proximityPanel.hidden = true;
   el.areaPanel.hidden = !state.areaSelectedIds.size;
   if (hidden) {
     setSheetFeedback("");
@@ -1597,7 +1597,7 @@ function clearInteractiveSelections() {
   clearProximitySelection();
   clearAreaSelection();
   el.areaPanel.hidden = true;
-  el.proximityPanel.hidden = state.sheetMode === "hidden";
+  el.proximityPanel.hidden = true;
   updateMarkerStyles();
   updateMapClearButtonVisibility();
 }
