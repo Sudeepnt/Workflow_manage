@@ -908,8 +908,8 @@ textarea {
 }
 
 .store-pin.is-selected {
-  background: linear-gradient(180deg, #10213b 0%, #0a1220 100%);
-  box-shadow: 0 14px 28px rgba(10, 18, 32, 0.28);
+  background: linear-gradient(180deg, #ef4444 0%, #c62828 100%);
+  box-shadow: 0 14px 28px rgba(198, 40, 40, 0.34);
 }
 
 .store-pin.is-nearby {
