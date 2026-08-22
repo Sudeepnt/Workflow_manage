@@ -1565,6 +1565,7 @@ async function renderMarkers(stores) {
     state.clusterer = new markerClusterer.MarkerClusterer({
       map,
       markers: state.markers.map((entry) => entry.marker),
+      maxZoom: 15,
       renderer: {
         render: ({ count, position }) => new google.maps.marker.AdvancedMarkerElement({
           position,
