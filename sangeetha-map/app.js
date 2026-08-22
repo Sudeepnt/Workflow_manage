@@ -362,7 +362,7 @@ async function ensureMap() {
     streetViewControl: false,
     gestureHandling: "greedy",
     clickableIcons: false,
-    minZoom: 5,
+    minZoom: 4,
     restriction: {
       latLngBounds: INDIA_BOUNDS,
       strictBounds: true,
