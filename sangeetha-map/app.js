@@ -78,6 +78,7 @@ const el = {
   addLocationStatus: document.getElementById("add-location-status"),
   addLocationDetails: document.getElementById("add-location-details"),
   addLocationModeButtons: [...document.querySelectorAll("[data-location-mode]")],
+  addStoreName: document.getElementById("add-store-name"),
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
   areaClearButton: document.getElementById("area-clear-button"),
@@ -96,6 +97,9 @@ const el = {
   mapHelperTitle: document.getElementById("map-helper-title"),
   mapModebar: document.querySelector(".map-modebar"),
   mapTools: document.getElementById("map-tools"),
+  mapToast: document.getElementById("map-toast"),
+  mapToastText: document.getElementById("map-toast-text"),
+  mapToastTitle: document.getElementById("map-toast-title"),
   proximityList: document.getElementById("proximity-list"),
   proximityClearButton: document.getElementById("proximity-clear-button"),
   proximityDoneButton: document.getElementById("proximity-done-button"),
@@ -126,6 +130,7 @@ const el = {
 };
 
 let mapsLoaderPromise = null;
+let toastTimer = null;
 
 function renderIconSet(root = document) {
   if (!globalThis.lucide?.createIcons) return;
@@ -154,6 +159,16 @@ function setMapHelper(title, text) {
   el.mapHelperCard.hidden = false;
   el.mapHelperTitle.textContent = title;
   el.mapHelperText.textContent = text;
+}
+
+function showToast(title, text = "") {
+  window.clearTimeout(toastTimer);
+  el.mapToastTitle.textContent = title;
+  el.mapToastText.textContent = text;
+  el.mapToast.hidden = false;
+  toastTimer = window.setTimeout(() => {
+    el.mapToast.hidden = true;
+  }, 4200);
 }
 
 function showStatusCard(visible) {
@@ -1020,7 +1035,54 @@ async function fillAddressFromCoordinates(location) {
   }
 }
 
+function updateAddLocationActionState() {
+  const enabled = Boolean(el.addStoreName.value.trim());
+  el.addLocationModeButtons.forEach((button) => {
+    button.disabled = !enabled;
+  });
+}
+
+async function createStoreAtLocation(location) {
+  const name = el.addStoreName.value.trim();
+  if (!name) return;
+  el.addLocationStatus.textContent = "Creating store from this location...";
+  el.addLocationModeButtons.forEach((button) => {
+    button.disabled = true;
+  });
+
+  try {
+    await fillAddressFromCoordinates(location);
+    const payload = await fetchJson("/api/sangeetha-stores", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        latitude: location.lat,
+        longitude: location.lng,
+        address: document.getElementById("add-store-address").value,
+        city: document.getElementById("add-store-city").value,
+        state: document.getElementById("add-store-state").value,
+        storeSqft: document.getElementById("add-store-sqft").value,
+      }),
+    });
+    clearAddPinSelection();
+    showSheetMode(null);
+    setMapHelper("", "");
+    el.addStoreForm.reset();
+    updateAddLocationModeUi("coordinates");
+    updateAddLocationActionState();
+    await loadStores();
+    showToast("Store created", `Store #${formatStoreNumber(payload.store)} was added.`);
+  } catch (error) {
+    el.addLocationStatus.textContent = error.message || "Could not create this store.";
+    updateAddLocationActionState();
+  }
+}
+
 async function setAddLocationMode(mode) {
+  if (!el.addStoreName.value.trim()) return;
   clearAddPinSelection();
   updateAddLocationModeUi(mode);
 
@@ -1038,17 +1100,9 @@ async function setAddLocationMode(mode) {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      document.getElementById("add-store-latitude").value = location.lat.toFixed(6);
-      document.getElementById("add-store-longitude").value = location.lng.toFixed(6);
-      await fillAddressFromCoordinates(location);
-      state.addPinMarker = new google.maps.Marker({
-        map,
-        position: location,
-        title: "New store location",
-      });
       map.panTo(location);
       map.setZoom(16);
-      el.addLocationStatus.textContent = "Current location captured.";
+      await createStoreAtLocation(location);
     } catch (error) {
       el.addLocationStatus.textContent = error.message || "Could not get your current location.";
     }
@@ -1064,18 +1118,9 @@ async function setAddLocationMode(mode) {
       lat: event.latLng.lat(),
       lng: event.latLng.lng(),
     };
-    document.getElementById("add-store-latitude").value = location.lat.toFixed(6);
-    document.getElementById("add-store-longitude").value = location.lng.toFixed(6);
-    state.addPinMarker = new google.maps.Marker({
-      map,
-      position: location,
-      title: "New store location",
-    });
     google.maps.event.removeListener(state.addPinClickListener);
     state.addPinClickListener = null;
-    updateAddLocationModeUi("coordinates");
-    setMapHelper("Store Pin Selected", "Review the location and complete the store details.");
-    showAddStoreSheet({ reset: false });
+    void createStoreAtLocation(location);
   });
 }
 
@@ -1090,6 +1135,7 @@ function showAddStoreSheet({ reset = true } = {}) {
     updateAddLocationModeUi("coordinates");
     el.addLocationStatus.textContent = "Enter the store coordinates below.";
   }
+  updateAddLocationActionState();
   showSheetMode("add");
   updateMarkerStyles();
   updateMapClearButtonVisibility();
@@ -1921,6 +1967,7 @@ function bindEvents() {
     }
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
+  el.addStoreName.addEventListener("input", updateAddLocationActionState);
   el.addLocationModeButtons.forEach((button) => {
     button.addEventListener("click", () => setAddLocationMode(button.dataset.locationMode));
   });
