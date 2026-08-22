@@ -32,8 +32,8 @@ where areas.id = numbered.id;
 
 select setval(
   'public.sangeetha_store_areas_number_seq',
-  coalesce((select max(area_number) from public.sangeetha_store_areas), 0),
-  true
+  coalesce((select max(area_number) from public.sangeetha_store_areas), 1),
+  exists (select 1 from public.sangeetha_store_areas)
 );
 
 alter table public.sangeetha_store_areas alter column area_number set not null;
@@ -60,6 +60,8 @@ execute function public.set_sangeetha_store_areas_updated_at();
 revoke insert, update, delete on public.sangeetha_store_areas from anon, authenticated;
 revoke usage on sequence public.sangeetha_store_areas_number_seq from anon, authenticated;
 grant select on public.sangeetha_store_areas to anon, authenticated;
+grant select, insert, update, delete on public.sangeetha_store_areas to service_role;
+grant usage, select on sequence public.sangeetha_store_areas_number_seq to service_role;
 
 alter table public.sangeetha_store_areas enable row level security;
 
