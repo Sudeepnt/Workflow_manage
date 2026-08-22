@@ -35,6 +35,7 @@ const state = {
   proximityStoreIds: new Set(),
   stateCountMarkers: [],
   selectedMarkerId: null,
+  selectedStoreOverlay: null,
   selectedRegion: "",
   selectedStoreId: null,
   sheetMode: "hidden",
@@ -835,11 +836,33 @@ function updateMarkerStyles() {
   state.markers.forEach((entry) => {
     const key = getStoreKey(entry.store);
     entry.marker.content = createPinNode(entry.store, {
-      selected: key === state.selectedMarkerId,
+      selected: false,
       nearby: state.proximityStoreIds.has(key),
       area: state.areaSelectedIds.has(key),
     });
   });
+}
+
+function clearSelectedStoreOverlay() {
+  if (state.selectedStoreOverlay) {
+    state.selectedStoreOverlay.map = null;
+    state.selectedStoreOverlay = null;
+  }
+}
+
+async function renderSelectedStoreOverlay(store) {
+  clearSelectedStoreOverlay();
+  const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+  const overlay = new AdvancedMarkerElement({
+    map: state.map,
+    position: getStoreCoordinates(store),
+    title: `${store.name} (#${formatStoreNumber(store)})`,
+    gmpClickable: true,
+    content: createPinNode(store, { selected: true }),
+    zIndex: 2_000_000,
+  });
+  overlay.addEventListener("gmp-click", () => showStoreSheet(store));
+  state.selectedStoreOverlay = overlay;
 }
 
 function getStoreCoordinates(store) {
@@ -890,6 +913,7 @@ function showSheetMode(mode) {
 }
 
 function renderStoreSheet(store) {
+  void renderSelectedStoreOverlay(store);
   state.selectedStoreId = getStoreKey(store);
   state.selectedMarkerId = getStoreKey(store);
   state.proximityOrigin = {
@@ -916,6 +940,7 @@ function renderStoreSheet(store) {
 }
 
 function renderLocationSheet() {
+  clearSelectedStoreOverlay();
   state.selectedStoreId = null;
   state.selectedMarkerId = null;
   el.sheetKicker.textContent = "My Location";
@@ -941,6 +966,7 @@ function showStoreSheet(store) {
     return;
   }
   if (!store) {
+    clearSelectedStoreOverlay();
     state.selectedStoreId = null;
     state.selectedMarkerId = null;
     showSheetMode(null);
@@ -952,6 +978,7 @@ function showStoreSheet(store) {
 }
 
 function showAddStoreSheet() {
+  clearSelectedStoreOverlay();
   state.selectedStoreId = null;
   state.selectedMarkerId = null;
   setSheetFeedback("");
@@ -1387,6 +1414,7 @@ function clearMapActions() {
   clearCityBoundary();
   clearProximitySelection();
   clearAreaSelection();
+  clearSelectedStoreOverlay();
   state.selectedStoreId = null;
   state.selectedMarkerId = null;
   el.areaPanel.hidden = true;
