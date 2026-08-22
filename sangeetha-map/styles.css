@@ -151,62 +151,21 @@ textarea {
   font-weight: 600;
 }
 
-.state-counts-card {
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid rgba(16, 33, 59, 0.08);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 26px rgba(16, 33, 59, 0.12);
-}
-
-.state-counts-title {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.state-counts-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  overflow: hidden;
-  padding-bottom: 2px;
-}
-
-.state-count-pill {
+.state-count-marker {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
-  gap: 5px;
-  padding: 5px 8px;
-  border: 1px solid rgba(37, 99, 235, 0.34);
-  border-radius: 999px;
-  background: rgba(245, 248, 255, 0.96);
-  color: var(--ink);
-  font-size: 0.7rem;
+  justify-content: center;
+  min-width: 58px;
+  padding: 7px 11px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  background: #10213b;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(16, 33, 59, 0.28);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   white-space: nowrap;
-}
-
-.state-count-pill strong {
-  color: var(--blue);
-  font-size: 0.72rem;
-}
-
-.state-count-pill .state-count-code {
-  color: var(--ink);
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.state-count-pill .state-count-total {
-  color: var(--blue);
-  font-size: 0.72rem;
-  font-weight: 800;
 }
 
 .map-actions {
@@ -1028,6 +987,13 @@ textarea {
     gap: 8px;
     padding: 10px;
     border-radius: 22px;
+  }
+
+  .state-count-marker {
+    min-width: 46px;
+    padding: 5px 8px;
+    border-radius: 10px;
+    font-size: 0.68rem;
   }
 
   .map-topbar h1 {

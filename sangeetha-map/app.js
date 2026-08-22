@@ -33,6 +33,7 @@ const state = {
   proximityPendingRadiusKm: null,
   proximityRadiusKm: null,
   proximityStoreIds: new Set(),
+  stateCountMarkers: [],
   selectedMarkerId: null,
   selectedRegion: "",
   selectedStoreId: null,
@@ -106,8 +107,6 @@ const el = {
   sheetTitle: document.getElementById("sheet-title"),
   sqftForm: document.getElementById("sqft-form"),
   sqftInput: document.getElementById("sqft-input"),
-  stateCountsCard: document.getElementById("state-counts-card"),
-  stateCountsList: document.getElementById("state-counts-list"),
   statusCard: document.getElementById("status-card"),
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
@@ -724,6 +723,56 @@ function createClusterNode(count) {
   cluster.textContent = String(count);
   cluster.setAttribute("aria-label", `${count} stores`);
   return cluster;
+}
+
+function createStateCountNode(code, count, region) {
+  const node = document.createElement("div");
+  node.className = "state-count-marker";
+  node.textContent = `${code} ${count}`;
+  node.title = `${region}: ${count} locations`;
+  node.setAttribute("aria-label", `${region}: ${count} locations`);
+  return node;
+}
+
+function clearStateCountMarkers() {
+  state.stateCountMarkers.forEach((marker) => {
+    marker.map = null;
+  });
+  state.stateCountMarkers = [];
+}
+
+async function renderStateCountMarkers(stores) {
+  clearStateCountMarkers();
+  if (!state.map || !stores.length) return;
+
+  const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+  const grouped = new Map();
+  stores.forEach((store) => {
+    const latitude = Number(store.latitude);
+    const longitude = Number(store.longitude);
+    const region = String(store.state || "Unknown").trim();
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    const current = grouped.get(region) || { lat: 0, lng: 0, count: 0 };
+    current.lat += latitude;
+    current.lng += longitude;
+    current.count += 1;
+    grouped.set(region, current);
+  });
+
+  grouped.forEach(({ lat, lng, count }, region) => {
+    const position = {
+      lat: lat / count,
+      lng: lng / count,
+    };
+    const code = STATE_CODES[region] || region.slice(0, 2).toUpperCase();
+    const marker = new AdvancedMarkerElement({
+      map: state.map,
+      position,
+      content: createStateCountNode(code, count, region),
+      zIndex: 800000,
+    });
+    state.stateCountMarkers.push(marker);
+  });
 }
 
 function updateMarkerStyles() {
@@ -1423,6 +1472,8 @@ async function renderMarkers(stores) {
     bounds.extend({ lat: latitude, lng: longitude });
   });
 
+  await renderStateCountMarkers(stores);
+
   if (state.markers.length > 30) {
     if (!globalThis.markerClusterer?.MarkerClusterer) {
       throw new Error("Google Maps marker clustering failed to load.");
@@ -1477,22 +1528,6 @@ function getRegionCounts(stores) {
   }, new Map());
 }
 
-function renderStateCounts(stores) {
-  const regions = [...getRegionCounts(stores).entries()]
-    .sort((left, right) => left[0].localeCompare(right[0]));
-  el.stateCountsList.replaceChildren();
-  regions.forEach(([region, count]) => {
-    const item = document.createElement("span");
-    item.className = "state-count-pill";
-    const code = STATE_CODES[region] || region.slice(0, 2).toUpperCase();
-    item.title = `${region}: ${count} locations`;
-    item.setAttribute("aria-label", `${region}: ${count} locations`);
-    item.innerHTML = `<strong class="state-count-code">${escapeHtml(code)}</strong><span class="state-count-total">${count}</span>`;
-    el.stateCountsList.appendChild(item);
-  });
-  el.stateCountsCard.hidden = !regions.length;
-}
-
 function isCurrentLocatorStore(store) {
   if (store.data_source === "manual") return true;
   return (
@@ -1509,7 +1544,6 @@ function populateRegionFilter(stores) {
     el.regionFilter.add(new Option(`${region} (${count})`, region));
   });
   el.regionFilter.value = state.selectedRegion;
-  renderStateCounts(stores);
 }
 
 async function applyRegionFilter() {
