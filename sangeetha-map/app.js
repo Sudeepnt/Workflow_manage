@@ -375,10 +375,6 @@ function styleStateBoundaries(map) {
 function updateStoreLayerVisibility() {
   if (!state.map) return;
   const showStores = state.areaMode || state.map.getZoom() > STATE_OVERVIEW_MAX_ZOOM;
-  if (state.clusterer) {
-    state.clusterer.setMap(showStores ? state.map : null);
-    return;
-  }
   state.markers.forEach(({ marker }) => {
     marker.map = showStores ? state.map : null;
   });
@@ -1558,28 +1554,11 @@ async function renderMarkers(stores) {
 
   await renderStateCountMarkers(stores);
 
-  if (state.markers.length > 30) {
-    if (!globalThis.markerClusterer?.MarkerClusterer) {
-      throw new Error("Google Maps marker clustering failed to load.");
-    }
-    state.clusterer = new markerClusterer.MarkerClusterer({
-      map,
-      markers: state.markers.map((entry) => entry.marker),
-      maxZoom: 15,
-      renderer: {
-        render: ({ count, position }) => new google.maps.marker.AdvancedMarkerElement({
-          position,
-          content: createClusterNode(count),
-          title: `Cluster of ${count} stores`,
-          zIndex: 1_000_000 + count,
-        }),
-      },
-    });
-  } else {
-    state.markers.forEach((entry) => {
-      entry.marker.map = map;
-    });
-  }
+  // Keep every store as an independent marker so zooming never hides a pin
+  // inside a cluster or loses it during a cluster refresh.
+  state.markers.forEach((entry) => {
+    entry.marker.map = map;
+  });
 
   updateStoreLayerVisibility();
 
