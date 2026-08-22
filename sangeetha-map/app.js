@@ -337,8 +337,27 @@ async function ensureMap() {
     ],
   });
   state.map.addListener("zoom_changed", updateStoreLayerVisibility);
+  styleStateBoundaries(state.map);
 
   return state.map;
+}
+
+function styleStateBoundaries(map) {
+  try {
+    const stateLayer = map.getFeatureLayer("ADMINISTRATIVE_AREA_LEVEL_1");
+    if (!stateLayer.isAvailable) {
+      console.warn("Google state boundary feature layer is unavailable for this map ID.");
+      return;
+    }
+    stateLayer.style = () => ({
+      strokeColor: "#d93025",
+      strokeOpacity: 0.95,
+      strokeWeight: 3,
+      fillOpacity: 0,
+    });
+  } catch (error) {
+    console.warn("Google state boundary styling is unavailable.", error);
+  }
 }
 
 function updateStoreLayerVisibility() {
