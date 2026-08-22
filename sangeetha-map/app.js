@@ -48,6 +48,8 @@ const INDIA_BOUNDS = {
   east: 97.6,
 };
 
+const STATE_OVERVIEW_MAX_ZOOM = 6;
+
 const CLOSED_BUSINESS_STATUSES = new Set([
   "CLOSED_TEMPORARILY",
   "CLOSED_PERMANENTLY",
@@ -323,8 +325,21 @@ async function ensureMap() {
     gestureHandling: "greedy",
     clickableIcons: false,
   });
+  state.map.addListener("zoom_changed", updateStoreLayerVisibility);
 
   return state.map;
+}
+
+function updateStoreLayerVisibility() {
+  if (!state.map) return;
+  const showStores = state.areaMode || state.map.getZoom() > STATE_OVERVIEW_MAX_ZOOM;
+  if (state.clusterer) {
+    state.clusterer.setMap(showStores ? state.map : null);
+    return;
+  }
+  state.markers.forEach(({ marker }) => {
+    marker.map = showStores ? state.map : null;
+  });
 }
 
 function getStoreKey(store) {
@@ -1495,6 +1510,8 @@ async function renderMarkers(stores) {
       entry.marker.map = map;
     });
   }
+
+  updateStoreLayerVisibility();
 
   if (!state.markers.length) {
     setStatus("No stores found", "Run an import to populate the map.");
