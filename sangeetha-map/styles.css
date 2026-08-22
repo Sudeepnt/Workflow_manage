@@ -29,6 +29,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -1058,7 +1059,7 @@ textarea {
   }
 
   .store-search-input {
-    font-size: 0.9rem;
+    font-size: 16px;
   }
 
   .search-icon {
