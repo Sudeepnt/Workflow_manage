@@ -39,10 +39,12 @@ const state = {
   proximityRadiusKm: null,
   proximityStoreIds: new Set(),
   stateCountMarkers: [],
+  storeLayerVisible: null,
   selectedMarkerId: null,
   selectedStoreOverlay: null,
   selectedRegion: "",
   selectedStoreId: null,
+  deleteConfirmStore: null,
   sheetMode: "hidden",
   stores: [],
 };
@@ -96,6 +98,11 @@ const el = {
   citySearchHost: document.getElementById("city-search-host"),
   cancelStoreEditButton: document.getElementById("cancel-store-edit-button"),
   deleteStoreButton: document.getElementById("delete-store-button"),
+  deleteCancelButton: document.getElementById("delete-cancel-button"),
+  deleteConfirmBackdrop: document.getElementById("delete-confirm-backdrop"),
+  deleteConfirmButton: document.getElementById("delete-confirm-button"),
+  deleteConfirmDialog: document.getElementById("delete-confirm-dialog"),
+  deleteConfirmMessage: document.getElementById("delete-confirm-message"),
   editStoreButton: document.getElementById("edit-store-button"),
   editStoreAddress: document.getElementById("edit-store-address"),
   editStoreCity: document.getElementById("edit-store-city"),
@@ -372,6 +379,7 @@ async function ensureMap() {
     fullscreenControl: false,
     mapTypeControl: false,
     streetViewControl: false,
+    minZoom: 4,
     gestureHandling: "greedy",
     clickableIcons: false,
     styles: [
@@ -413,6 +421,8 @@ function styleStateBoundaries(map) {
 function updateStoreLayerVisibility() {
   if (!state.map) return;
   const showStores = state.areaMode || state.map.getZoom() > STATE_OVERVIEW_MAX_ZOOM;
+  if (state.storeLayerVisible === showStores) return;
+  state.storeLayerVisible = showStores;
   if (state.clusterer) {
     state.clusterer.setMap(showStores ? state.map : null);
     return;
@@ -794,6 +804,7 @@ function clearMarkers() {
     if (entry.marker) entry.marker.map = null;
   });
   state.markers = [];
+  state.storeLayerVisible = null;
 }
 
 function createPinNode(store, flags = {}) {
@@ -960,6 +971,20 @@ function setStoreEditMode(editing) {
   el.editStoreButton.hidden = editing;
   el.deleteStoreButton.hidden = editing;
   if (!editing) setSheetFeedback("");
+}
+
+function closeDeleteConfirmation() {
+  state.deleteConfirmStore = null;
+  el.deleteConfirmDialog.hidden = true;
+  el.deleteConfirmBackdrop.hidden = true;
+}
+
+function openDeleteConfirmation(store) {
+  state.deleteConfirmStore = store;
+  el.deleteConfirmMessage.textContent = `Deleting Store #${formatStoreNumber(store)} and its map pin is irreversible. This store will be permanently removed.`;
+  el.deleteConfirmDialog.hidden = false;
+  el.deleteConfirmBackdrop.hidden = false;
+  el.deleteConfirmButton.focus();
 }
 
 function populateStoreEditForm(store) {
@@ -2051,8 +2076,8 @@ async function deleteSelectedStore() {
   if (!state.selectedStoreId) return;
   const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
   if (!store) return;
-  if (!window.confirm(`Delete Store #${formatStoreNumber(store)}?`)) return;
 
+  closeDeleteConfirmation();
   el.deleteStoreButton.disabled = true;
   try {
     await fetchJson("/api/sangeetha-stores", {
@@ -2074,6 +2099,12 @@ async function deleteSelectedStore() {
   }
 }
 
+function requestDeleteSelectedStore() {
+  if (!state.selectedStoreId) return;
+  const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
+  if (store) openDeleteConfirmation(store);
+}
+
 function bindEvents() {
   el.topSearchButton.addEventListener("click", () => {
     setSearchVisibility(el.mapTools.hidden);
@@ -2090,6 +2121,10 @@ function bindEvents() {
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (!el.deleteConfirmDialog.hidden) {
+        closeDeleteConfirmation();
+        return;
+      }
       if (state.areaMode) {
         clearAreaSelection();
         renderSavedAreas();
@@ -2135,7 +2170,10 @@ function bindEvents() {
   });
   el.editStoreForm.addEventListener("submit", saveStoreEdits);
   el.addStoreForm.addEventListener("submit", createManualStore);
-  el.deleteStoreButton.addEventListener("click", deleteSelectedStore);
+  el.deleteStoreButton.addEventListener("click", requestDeleteSelectedStore);
+  el.deleteCancelButton.addEventListener("click", closeDeleteConfirmation);
+  el.deleteConfirmBackdrop.addEventListener("click", closeDeleteConfirmation);
+  el.deleteConfirmButton.addEventListener("click", deleteSelectedStore);
   getRadiusOptions().forEach((button) => {
     button.addEventListener("click", () => {
       if (!state.proximityOrigin) return;

@@ -161,6 +161,17 @@ const server = http.createServer((request, response) => {
       }
       localStores[index] = {
         ...localStores[index],
+        name: body.name === undefined ? localStores[index].name : String(body.name || "").trim(),
+        address: body.address === undefined ? localStores[index].address : String(body.address || "").trim() || null,
+        city: body.city === undefined ? localStores[index].city : String(body.city || "").trim() || null,
+        state: body.state === undefined ? localStores[index].state : String(body.state || "").trim() || null,
+        phone: body.phone === undefined ? localStores[index].phone : String(body.phone || "").trim() || null,
+        hours: body.hours === undefined ? localStores[index].hours : String(body.hours || "").trim() || null,
+        latitude: body.latitude === undefined ? localStores[index].latitude : Number(body.latitude),
+        longitude: body.longitude === undefined ? localStores[index].longitude : Number(body.longitude),
+        google_maps_uri: body.latitude === undefined || body.longitude === undefined
+          ? localStores[index].google_maps_uri
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${body.latitude},${body.longitude}`)}`,
         store_sqft: Number.isFinite(sqft) ? sqft : null,
       };
       sendJson(response, 200, { store: localStores[index] });
@@ -176,10 +187,6 @@ const server = http.createServer((request, response) => {
       const index = localStores.findIndex((store) => store.id === storeId);
       if (index === -1) {
         sendJson(response, 404, { error: "Store not found" });
-        return;
-      }
-      if (localStores[index].data_source !== "manual") {
-        sendJson(response, 403, { error: "Only manually added stores can be deleted." });
         return;
       }
       const [store] = localStores.splice(index, 1);
