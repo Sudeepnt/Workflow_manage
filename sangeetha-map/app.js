@@ -1830,7 +1830,10 @@ function isCurrentLocatorStore(store) {
 
 function populateRegionFilter(stores) {
   const counts = getRegionCounts(stores);
-  const regions = [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+  // The top filter is for store states only; saved drawing boundaries have their own controls.
+  const regions = [...counts.entries()]
+    .filter(([region]) => Object.prototype.hasOwnProperty.call(STATE_CODES, region))
+    .sort((left, right) => left[0].localeCompare(right[0]));
   el.regionFilter.replaceChildren(new Option(`All India (${stores.length})`, ""));
   regions.forEach(([region, count]) => {
     el.regionFilter.add(new Option(`${region} (${count})`, region));
