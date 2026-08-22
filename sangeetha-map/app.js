@@ -905,6 +905,7 @@ function showSheetMode(mode) {
   state.sheetMode = mode || "hidden";
   const hidden = state.sheetMode === "hidden";
   el.storeSheet.hidden = hidden;
+  el.storeSheet.classList.toggle("is-add-mode", state.sheetMode === "add");
   el.sheetStoreView.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
   el.addStoreView.hidden = state.sheetMode !== "add";
   el.proximityPanel.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";

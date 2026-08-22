@@ -591,6 +591,16 @@ textarea {
   box-shadow: 0 22px 56px rgba(82, 98, 122, 0.2);
 }
 
+.store-sheet.is-add-mode {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  width: min(440px, calc(100% - 28px));
+  max-height: min(88dvh, 760px);
+  transform: translate(-50%, -50%);
+}
+
 .sheet-handle {
   width: 48px;
   height: 5px;
@@ -1035,6 +1045,11 @@ textarea {
     width: 380px;
     max-height: calc(100dvh - 36px);
     border-radius: 24px;
+  }
+
+  .store-sheet.is-add-mode {
+    right: auto;
+    width: min(440px, calc(100vw - 28px));
   }
 }
 
