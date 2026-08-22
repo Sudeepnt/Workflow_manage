@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 const { createClient } = require("@supabase/supabase-js");
+const catalogData = require("../data/sangeetha-store-catalog.json");
 
-const SOURCE_API_URL = process.env.SANGEETHA_SOURCE_API_URL
-  || "https://atit-workflow.vercel.app/api/sangeetha-stores";
+const SOURCE_API_URL = String(process.env.SANGEETHA_SOURCE_API_URL ?? "").trim();
 const TARGET_URL = String(process.env.SUPABASE_URL ?? "").trim();
 const TARGET_SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
 const BATCH_SIZE = 100;
@@ -54,6 +54,18 @@ function toTargetRow(store) {
 }
 
 async function fetchSourceStores() {
+  if (!SOURCE_API_URL) {
+    return catalogData.stores.map((store, index) => ({
+      ...store,
+      id: index + 1,
+      store_number: index + 1,
+      data_source: "catalog",
+      business_status: null,
+      store_sqft: null,
+      google_synced_at: null,
+    }));
+  }
+
   const response = await fetch(SOURCE_API_URL);
   const payload = await response.json();
   if (!response.ok) {

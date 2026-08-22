@@ -63,8 +63,8 @@ where stores.id = numbered.id;
 
 select setval(
   'public.sangeetha_store_number_seq',
-  coalesce((select max(store_number) from public.sangeetha_stores), 0),
-  true
+  coalesce((select max(store_number) from public.sangeetha_stores), 1),
+  exists (select 1 from public.sangeetha_stores)
 );
 
 alter table public.sangeetha_stores alter column store_number set not null;
@@ -100,8 +100,8 @@ set search_path = public
 as $$
   select setval(
     'public.sangeetha_store_number_seq',
-    coalesce((select max(store_number) from public.sangeetha_stores), 0),
-    true
+    coalesce((select max(store_number) from public.sangeetha_stores), 1),
+    exists (select 1 from public.sangeetha_stores)
   );
 $$;
 
