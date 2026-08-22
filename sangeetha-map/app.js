@@ -93,6 +93,8 @@ const el = {
   sheetTitle: document.getElementById("sheet-title"),
   sqftForm: document.getElementById("sqft-form"),
   sqftInput: document.getElementById("sqft-input"),
+  stateCountsCard: document.getElementById("state-counts-card"),
+  stateCountsList: document.getElementById("state-counts-list"),
   statusCard: document.getElementById("status-card"),
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
@@ -1462,6 +1464,19 @@ function getRegionCounts(stores) {
   }, new Map());
 }
 
+function renderStateCounts(stores) {
+  const regions = [...getRegionCounts(stores).entries()]
+    .sort((left, right) => left[0].localeCompare(right[0]));
+  el.stateCountsList.replaceChildren();
+  regions.forEach(([region, count]) => {
+    const item = document.createElement("span");
+    item.className = "state-count-pill";
+    item.innerHTML = `<span>${escapeHtml(region)}</span><strong>${count}</strong>`;
+    el.stateCountsList.appendChild(item);
+  });
+  el.stateCountsCard.hidden = !regions.length;
+}
+
 function isCurrentLocatorStore(store) {
   if (store.data_source === "manual") return true;
   return (
@@ -1478,6 +1493,7 @@ function populateRegionFilter(stores) {
     el.regionFilter.add(new Option(`${region} (${count})`, region));
   });
   el.regionFilter.value = state.selectedRegion;
+  renderStateCounts(stores);
 }
 
 async function applyRegionFilter() {
