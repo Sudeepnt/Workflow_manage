@@ -329,9 +329,9 @@ async function ensureMap() {
         featureType: "administrative.province",
         elementType: "geometry.stroke",
         stylers: [
-          { color: "#526174" },
+          { color: "#d93025" },
           { visibility: "on" },
-          { weight: 2 },
+          { weight: 3 },
         ],
       },
     ],
