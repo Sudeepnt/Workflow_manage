@@ -108,7 +108,7 @@ textarea {
 .map-topbar {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(126px, 1fr) minmax(136px, 156px) 48px;
+  grid-template-columns: minmax(126px, 1fr) 48px minmax(136px, 156px);
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -234,6 +234,11 @@ textarea {
   min-height: 48px;
   padding: 0;
   border-radius: 16px;
+}
+
+.top-search-button.is-active {
+  background: var(--blue);
+  color: #fff;
 }
 
 .action-button:disabled,
@@ -983,7 +988,7 @@ textarea {
   }
 
   .map-topbar {
-    grid-template-columns: 126px minmax(0, 1fr) 44px;
+    grid-template-columns: 126px 44px minmax(0, 1fr);
     gap: 8px;
     padding: 10px;
     border-radius: 22px;

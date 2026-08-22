@@ -19,20 +19,18 @@
             <img class="map-brand-logo" src="/sangeetha-map/assets/sangeetha-logo.png" alt="" aria-hidden="true" />
             <span>Store</span>
           </h1>
+          <button class="action-button action-icon-button top-search-button" id="top-search-button" type="button" aria-label="Show search" aria-expanded="false" title="Search stores">
+            <i class="control-icon" data-lucide="search" aria-hidden="true"></i>
+          </button>
           <label class="region-control">
             <span class="sr-only">Region</span>
             <select id="region-filter" aria-label="Filter stores by state" autocomplete="off">
               <option value="">All India</option>
             </select>
           </label>
-          <div class="map-actions">
-            <button class="action-button action-icon-button" id="refresh-button" type="button" aria-label="Import or refresh stores" title="Refresh stores">
-              <i class="control-icon" data-lucide="refresh-cw" aria-hidden="true"></i>
-            </button>
-          </div>
         </header>
 
-        <div class="map-tools" aria-label="Map search and location controls">
+        <div class="map-tools" id="map-tools" aria-label="Map search and location controls" hidden>
           <div class="city-search-card">
             <i class="search-icon" data-lucide="search" aria-hidden="true"></i>
             <div class="city-search-host" id="city-search-host">

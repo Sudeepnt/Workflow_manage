@@ -88,6 +88,7 @@ const el = {
   mapHelperText: document.getElementById("map-helper-text"),
   mapHelperTitle: document.getElementById("map-helper-title"),
   mapModebar: document.querySelector(".map-modebar"),
+  mapTools: document.getElementById("map-tools"),
   proximityList: document.getElementById("proximity-list"),
   proximityClearButton: document.getElementById("proximity-clear-button"),
   proximityDoneButton: document.getElementById("proximity-done-button"),
@@ -95,7 +96,6 @@ const el = {
   proximityPanel: document.getElementById("proximity-panel"),
   proximitySummary: document.getElementById("proximity-summary"),
   radiusOptions: document.getElementById("radius-options"),
-  refreshButton: document.getElementById("refresh-button"),
   regionFilter: document.getElementById("region-filter"),
   savedAreasToggle: document.getElementById("saved-areas-toggle"),
   sheetAddress: document.getElementById("sheet-address"),
@@ -112,6 +112,7 @@ const el = {
   statusCard: document.getElementById("status-card"),
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
+  topSearchButton: document.getElementById("top-search-button"),
   storeSearchInput: document.getElementById("store-search-input"),
   storeSearchResults: document.getElementById("store-search-results"),
   storeSheet: document.getElementById("store-sheet"),
@@ -154,8 +155,19 @@ function showStatusCard(visible) {
 
 function setLoadingState(loading) {
   state.loading = loading;
-  el.refreshButton.disabled = loading || state.areaMode;
   el.regionFilter.disabled = loading || state.areaMode;
+}
+
+function setSearchVisibility(visible) {
+  el.mapTools.hidden = !visible;
+  el.topSearchButton.classList.toggle("is-active", visible);
+  el.topSearchButton.setAttribute("aria-expanded", String(visible));
+  el.topSearchButton.setAttribute("aria-label", visible ? "Hide search" : "Show search");
+  if (visible) {
+    requestAnimationFrame(() => el.storeSearchInput.focus());
+  } else {
+    clearSearchResults();
+  }
 }
 
 function setAreaButtonLabel(label) {
@@ -231,7 +243,6 @@ function setAreaModeUi(active) {
   el.areaDeleteButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
   el.locationButton.disabled = active;
-  el.refreshButton.disabled = active || state.loading;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
   el.areaButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
@@ -1761,7 +1772,9 @@ async function deleteSelectedManualStore() {
 }
 
 function bindEvents() {
-  el.refreshButton.addEventListener("click", refreshStores);
+  el.topSearchButton.addEventListener("click", () => {
+    setSearchVisibility(el.mapTools.hidden);
+  });
   el.locationButton.addEventListener("click", showCurrentLocation);
   el.sheetClose.addEventListener("click", () => showStoreSheet(null));
   el.regionFilter.addEventListener("change", async () => {
@@ -1777,6 +1790,10 @@ function bindEvents() {
       if (state.areaMode) {
         clearAreaSelection();
         renderSavedAreas();
+        return;
+      }
+      if (!el.mapTools.hidden) {
+        setSearchVisibility(false);
         return;
       }
       if (!el.storeSheet.hidden) {
