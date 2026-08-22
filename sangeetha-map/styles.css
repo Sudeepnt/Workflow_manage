@@ -184,7 +184,7 @@ textarea {
   align-items: center;
   gap: 5px;
   padding: 5px 8px;
-  border: 1px solid rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.34);
   border-radius: 999px;
   background: rgba(245, 248, 255, 0.96);
   color: var(--ink);
