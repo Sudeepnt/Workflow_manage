@@ -1043,7 +1043,10 @@ async function fillAddressFromCoordinates(location) {
 
 function updateAddLocationActionState() {
   const enabled = Boolean(el.addStoreName.value.trim());
+  const nameField = el.addStoreName.closest(".sheet-field");
+  nameField.classList.toggle("is-invalid", !enabled && document.activeElement !== el.addStoreName);
   el.addLocationModeButtons.forEach((button) => {
+    button.disabled = false;
     button.setAttribute("aria-disabled", String(!enabled));
     button.classList.toggle("is-blocked", !enabled);
   });
@@ -1067,6 +1070,13 @@ async function updateCoordinatesFromInputs() {
   state.coordinatesReady = true;
   el.addLocationStatus.textContent = "Location details found.";
   updateAddLocationActionState();
+}
+
+function showStoreNameRequired() {
+  const nameField = el.addStoreName.closest(".sheet-field");
+  nameField.classList.add("is-invalid");
+  el.addLocationStatus.textContent = "Store name is required before choosing a location.";
+  el.addStoreName.focus();
 }
 
 function scheduleCoordinateLookup() {
@@ -1117,8 +1127,7 @@ async function createStoreAtLocation(location) {
 
 async function setAddLocationMode(mode) {
   if (!el.addStoreName.value.trim()) {
-    el.addLocationStatus.textContent = "Enter the store name first.";
-    showToast("Store name required", "Enter a store name before choosing a location.");
+    showStoreNameRequired();
     return;
   }
   clearAddPinSelection();
@@ -1916,8 +1925,7 @@ async function createManualStore(event) {
   event.preventDefault();
 
   if (!el.addStoreName.value.trim()) {
-    el.addLocationStatus.textContent = "Enter the store name first.";
-    showToast("Store name required", "Enter a store name before creating the store.");
+    showStoreNameRequired();
     return;
   }
   if (!state.coordinatesReady) {

@@ -826,6 +826,17 @@ textarea {
   color: var(--ink);
 }
 
+.sheet-field.is-invalid > span {
+  color: var(--red);
+}
+
+.sheet-field input.is-invalid,
+.sheet-field.is-invalid input {
+  border-color: rgba(217, 48, 37, 0.72);
+  background: rgba(254, 242, 242, 0.96);
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1);
+}
+
 .sheet-save-button {
   min-height: 52px;
   border: 1px solid rgba(37, 99, 235, 0.55);
