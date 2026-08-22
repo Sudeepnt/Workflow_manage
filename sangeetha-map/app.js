@@ -15,6 +15,8 @@ const state = {
   areaVertexMarkers: [],
   activeAreaPointIndex: null,
   addLocationMode: "coordinates",
+  coordinatesReady: false,
+  coordinatesTimer: null,
   addPinClickListener: null,
   addPinMarker: null,
   areas: [],
@@ -78,6 +80,9 @@ const el = {
   addLocationStatus: document.getElementById("add-location-status"),
   addLocationDetails: document.getElementById("add-location-details"),
   addLocationModeButtons: [...document.querySelectorAll("[data-location-mode]")],
+  addStoreSaveButton: document.getElementById("add-store-save-button"),
+  addLatitude: document.getElementById("add-store-latitude"),
+  addLongitude: document.getElementById("add-store-longitude"),
   addStoreName: document.getElementById("add-store-name"),
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
@@ -1016,6 +1021,7 @@ function updateAddLocationModeUi(mode) {
   el.addLocationDetails.hidden = mode === "current";
   document.getElementById("add-store-latitude").readOnly = !editable;
   document.getElementById("add-store-longitude").readOnly = !editable;
+  updateAddLocationActionState();
 }
 
 async function fillAddressFromCoordinates(location) {
@@ -1038,8 +1044,36 @@ async function fillAddressFromCoordinates(location) {
 function updateAddLocationActionState() {
   const enabled = Boolean(el.addStoreName.value.trim());
   el.addLocationModeButtons.forEach((button) => {
-    button.disabled = !enabled;
+    button.setAttribute("aria-disabled", String(!enabled));
+    button.classList.toggle("is-blocked", !enabled);
   });
+  el.addStoreSaveButton.disabled = state.addLocationMode !== "coordinates"
+    || !enabled
+    || !state.coordinatesReady;
+}
+
+async function updateCoordinatesFromInputs() {
+  const latitude = Number(el.addLatitude.value.trim());
+  const longitude = Number(el.addLongitude.value.trim());
+  state.coordinatesReady = false;
+  updateAddLocationActionState();
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+    || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    el.addLocationStatus.textContent = "Enter valid latitude and longitude.";
+    return;
+  }
+  el.addLocationStatus.textContent = "Finding the address for these coordinates...";
+  await fillAddressFromCoordinates({ lat: latitude, lng: longitude });
+  state.coordinatesReady = true;
+  el.addLocationStatus.textContent = "Location details found.";
+  updateAddLocationActionState();
+}
+
+function scheduleCoordinateLookup() {
+  window.clearTimeout(state.coordinatesTimer);
+  state.coordinatesTimer = window.setTimeout(() => {
+    void updateCoordinatesFromInputs();
+  }, 450);
 }
 
 async function createStoreAtLocation(location) {
@@ -1082,7 +1116,11 @@ async function createStoreAtLocation(location) {
 }
 
 async function setAddLocationMode(mode) {
-  if (!el.addStoreName.value.trim()) return;
+  if (!el.addStoreName.value.trim()) {
+    el.addLocationStatus.textContent = "Enter the store name first.";
+    showToast("Store name required", "Enter a store name before choosing a location.");
+    return;
+  }
   clearAddPinSelection();
   updateAddLocationModeUi(mode);
 
@@ -1132,6 +1170,7 @@ function showAddStoreSheet({ reset = true } = {}) {
     clearAddPinSelection();
     setSheetFeedback("");
     el.addStoreForm.reset();
+    state.coordinatesReady = false;
     updateAddLocationModeUi("coordinates");
     el.addLocationStatus.textContent = "Enter the store coordinates below.";
   }
@@ -1876,6 +1915,16 @@ async function saveStoreSqft(event) {
 async function createManualStore(event) {
   event.preventDefault();
 
+  if (!el.addStoreName.value.trim()) {
+    el.addLocationStatus.textContent = "Enter the store name first.";
+    showToast("Store name required", "Enter a store name before creating the store.");
+    return;
+  }
+  if (!state.coordinatesReady) {
+    el.addLocationStatus.textContent = "Enter valid coordinates to continue.";
+    return;
+  }
+
   try {
     const payload = await fetchJson("/api/sangeetha-stores", {
       method: "POST",
@@ -1968,6 +2017,8 @@ function bindEvents() {
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
   el.addStoreName.addEventListener("input", updateAddLocationActionState);
+  el.addLatitude.addEventListener("input", scheduleCoordinateLookup);
+  el.addLongitude.addEventListener("input", scheduleCoordinateLookup);
   el.addLocationModeButtons.forEach((button) => {
     button.addEventListener("click", () => setAddLocationMode(button.dataset.locationMode));
   });

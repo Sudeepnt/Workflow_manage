@@ -771,6 +771,11 @@ textarea {
   opacity: 0.48;
 }
 
+.location-mode-button.is-blocked {
+  border-style: dashed;
+  opacity: 0.62;
+}
+
 .location-mode-status {
   min-height: 18px;
   margin: 0 0 12px;
