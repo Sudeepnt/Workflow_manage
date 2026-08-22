@@ -14,6 +14,9 @@ const state = {
   areaSelectedIds: new Set(),
   areaVertexMarkers: [],
   activeAreaPointIndex: null,
+  addLocationMode: "coordinates",
+  addPinClickListener: null,
+  addPinMarker: null,
   areas: [],
   savedAreasVisible: true,
   cityBoundaryLayer: null,
@@ -72,6 +75,8 @@ const STATE_CODES = {
 const el = {
   addStoreButton: document.getElementById("add-store-button"),
   addStoreForm: document.getElementById("add-store-form"),
+  addLocationStatus: document.getElementById("add-location-status"),
+  addLocationModeButtons: [...document.querySelectorAll("[data-location-mode]")],
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
   areaClearButton: document.getElementById("area-clear-button"),
@@ -963,6 +968,7 @@ function showStoreSheet(store) {
   }
   if (!store) {
     clearSelectedStoreOverlay();
+    clearAddPinSelection();
     state.selectedStoreId = null;
     state.selectedMarkerId = null;
     showSheetMode(null);
@@ -973,12 +979,96 @@ function showStoreSheet(store) {
   renderStoreSheet(store);
 }
 
-function showAddStoreSheet() {
+function clearAddPinSelection() {
+  if (state.addPinClickListener) {
+    google.maps.event.removeListener(state.addPinClickListener);
+    state.addPinClickListener = null;
+  }
+  if (state.addPinMarker) {
+    state.addPinMarker.setMap(null);
+    state.addPinMarker = null;
+  }
+}
+
+function updateAddLocationModeUi(mode) {
+  state.addLocationMode = mode;
+  el.addLocationModeButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.locationMode === mode);
+  });
+  const editable = mode === "coordinates";
+  document.getElementById("add-store-latitude").readOnly = !editable;
+  document.getElementById("add-store-longitude").readOnly = !editable;
+}
+
+async function setAddLocationMode(mode) {
+  clearAddPinSelection();
+  updateAddLocationModeUi(mode);
+
+  if (mode === "coordinates") {
+    el.addLocationStatus.textContent = "Enter the store coordinates below.";
+    return;
+  }
+
+  const map = await ensureMap();
+  if (mode === "current") {
+    el.addLocationStatus.textContent = "Finding your current location...";
+    try {
+      const position = await getCurrentPosition();
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+      document.getElementById("add-store-latitude").value = location.lat.toFixed(6);
+      document.getElementById("add-store-longitude").value = location.lng.toFixed(6);
+      state.addPinMarker = new google.maps.Marker({
+        map,
+        position: location,
+        title: "New store location",
+      });
+      map.panTo(location);
+      map.setZoom(16);
+      el.addLocationStatus.textContent = "Current location captured.";
+    } catch (error) {
+      el.addLocationStatus.textContent = error.message || "Could not get your current location.";
+    }
+    return;
+  }
+
+  showSheetMode(null);
+  setMapHelper("Drop Store Pin", "Zoom in, then click the exact store location.");
+  el.addLocationStatus.textContent = "Click the map to place the store pin.";
+  state.addPinClickListener = map.addListener("click", (event) => {
+    if (!event.latLng) return;
+    const location = {
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng(),
+    };
+    document.getElementById("add-store-latitude").value = location.lat.toFixed(6);
+    document.getElementById("add-store-longitude").value = location.lng.toFixed(6);
+    state.addPinMarker = new google.maps.Marker({
+      map,
+      position: location,
+      title: "New store location",
+    });
+    google.maps.event.removeListener(state.addPinClickListener);
+    state.addPinClickListener = null;
+    updateAddLocationModeUi("coordinates");
+    setMapHelper("Store Pin Selected", "Review the location and complete the store details.");
+    showAddStoreSheet({ reset: false });
+  });
+}
+
+function showAddStoreSheet({ reset = true } = {}) {
   clearSelectedStoreOverlay();
   state.selectedStoreId = null;
   state.selectedMarkerId = null;
-  setSheetFeedback("");
-  el.addStoreForm.reset();
+  if (reset) {
+    clearAddPinSelection();
+    setSheetFeedback("");
+    el.addStoreForm.reset();
+    updateAddLocationModeUi("coordinates");
+    el.addLocationStatus.textContent = "Enter the store coordinates below.";
+  }
   showSheetMode("add");
   updateMarkerStyles();
   updateMapClearButtonVisibility();
@@ -1810,6 +1900,9 @@ function bindEvents() {
     }
   });
   el.addStoreButton.addEventListener("click", showAddStoreSheet);
+  el.addLocationModeButtons.forEach((button) => {
+    button.addEventListener("click", () => setAddLocationMode(button.dataset.locationMode));
+  });
   el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
   el.areaRenameButton.addEventListener("click", renameAreaSelection);
   el.areaDeleteButton.addEventListener("click", deleteAreaSelection);

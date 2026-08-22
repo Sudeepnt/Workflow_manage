@@ -703,6 +703,39 @@ textarea {
   margin-top: 18px;
 }
 
+.location-mode-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 16px 0 8px;
+}
+
+.location-mode-button {
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.96);
+  color: var(--blue-deep);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.location-mode-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.location-mode-status {
+  min-height: 18px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .store-edit-form,
 .selection-panel {
   padding-top: 18px;

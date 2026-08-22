@@ -134,6 +134,12 @@
               <span>Store Name</span>
               <input id="add-store-name" type="text" required autocomplete="off" />
             </label>
+            <div class="location-mode-picker" role="group" aria-label="Choose store location method">
+              <button class="location-mode-button is-active" type="button" data-location-mode="coordinates">Lat / Long</button>
+              <button class="location-mode-button" type="button" data-location-mode="current">My Location</button>
+              <button class="location-mode-button" type="button" data-location-mode="drop-pin">Drop Pin</button>
+            </div>
+            <p class="location-mode-status" id="add-location-status">Enter the store coordinates below.</p>
             <div class="sheet-grid">
               <label class="sheet-field">
                 <span>Latitude</span>
