@@ -324,6 +324,17 @@ async function ensureMap() {
     streetViewControl: false,
     gestureHandling: "greedy",
     clickableIcons: false,
+    styles: [
+      {
+        featureType: "administrative.province",
+        elementType: "geometry.stroke",
+        stylers: [
+          { color: "#526174" },
+          { visibility: "on" },
+          { weight: 2 },
+        ],
+      },
+    ],
   });
   state.map.addListener("zoom_changed", updateStoreLayerVisibility);
 
