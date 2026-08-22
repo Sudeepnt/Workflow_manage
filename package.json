@@ -5,7 +5,8 @@
   "description": "ATIT workflow shell",
   "scripts": {
     "dev": "node scripts/dev-server.js",
-    "stores:discover": "node scripts/fetch-sangeetha-official.js && node scripts/fetch-sangeetha-locator.js"
+    "stores:discover": "node scripts/fetch-sangeetha-official.js && node scripts/fetch-sangeetha-locator.js",
+    "stores:migrate": "node scripts/migrate-sangeetha-stores.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

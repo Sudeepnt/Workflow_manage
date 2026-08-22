@@ -3,6 +3,7 @@ const {
   getSupabaseReadClient,
 } = require("../_lib/supabase");
 const { allowMethods, readJsonBody, sendJson } = require("../_lib/http");
+const catalogData = require("../../data/sangeetha-store-catalog.json");
 
 const STALE_DAYS = 30;
 const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000;
@@ -72,16 +73,33 @@ function normalizeSqft(value) {
   return sqft;
 }
 
-async function listStores(res) {
-  const supabase = getSupabaseReadClient();
-  const { data, error } = await supabase
-    .from("sangeetha_stores")
-    .select(STORE_COLUMNS)
-    .order("store_number", { ascending: true });
+function getCatalogFallbackRows() {
+  return catalogData.stores.map((store, index) => ({
+    id: index + 1,
+    store_number: index + 1,
+    google_place_id: store.google_place_id,
+    official_store_id: store.official_store_id,
+    data_source: "catalog",
+    name: store.name,
+    latitude: store.latitude,
+    longitude: store.longitude,
+    address: store.address,
+    business_status: null,
+    google_maps_uri: store.google_maps_uri,
+    store_code: store.store_code,
+    phone: store.phone,
+    hours: store.hours,
+    city: store.city,
+    state: store.state,
+    verification_status: store.verification_status,
+    store_sqft: null,
+    google_synced_at: null,
+    created_at: null,
+    updated_at: null,
+  }));
+}
 
-  if (error) throw error;
-
-  const rows = Array.isArray(data) ? data : [];
+function sendStoreList(res, rows, { fallback = false } = {}) {
   const now = Date.now();
   const staleCount = rows.filter((row) => {
     if (!row.google_place_id) return false;
@@ -99,8 +117,26 @@ async function listStores(res) {
       staleAfterDays: STALE_DAYS,
       locatorOnlyCount,
       latestSyncAt: latestSyncAt ? new Date(latestSyncAt).toISOString() : null,
+      fallback,
     },
   });
+}
+
+async function listStores(res) {
+  const supabase = getSupabaseReadClient();
+  const { data, error } = await supabase
+    .from("sangeetha_stores")
+    .select(STORE_COLUMNS)
+    .order("store_number", { ascending: true });
+
+  if (error?.code === "PGRST205") {
+    sendStoreList(res, getCatalogFallbackRows(), { fallback: true });
+    return;
+  }
+  if (error) throw error;
+
+  const rows = Array.isArray(data) ? data : [];
+  sendStoreList(res, rows);
 }
 
 async function createManualStore(req, res) {

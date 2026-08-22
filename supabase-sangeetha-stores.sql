@@ -92,6 +92,22 @@ before update on public.sangeetha_stores
 for each row
 execute function public.set_sangeetha_stores_updated_at();
 
+create or replace function public.sync_sangeetha_store_number_sequence()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  select setval(
+    'public.sangeetha_store_number_seq',
+    coalesce((select max(store_number) from public.sangeetha_stores), 0),
+    true
+  );
+$$;
+
+revoke execute on function public.sync_sangeetha_store_number_sequence() from public, anon, authenticated;
+grant execute on function public.sync_sangeetha_store_number_sequence() to service_role;
+
 grant select on public.sangeetha_stores to anon, authenticated;
 grant select, insert, update, delete on public.sangeetha_stores to service_role;
 
