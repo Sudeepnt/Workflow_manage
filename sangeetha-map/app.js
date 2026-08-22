@@ -76,6 +76,7 @@ const el = {
   addStoreButton: document.getElementById("add-store-button"),
   addStoreForm: document.getElementById("add-store-form"),
   addLocationStatus: document.getElementById("add-location-status"),
+  addLocationDetails: document.getElementById("add-location-details"),
   addLocationModeButtons: [...document.querySelectorAll("[data-location-mode]")],
   addStoreView: document.getElementById("sheet-add-view"),
   areaButton: document.getElementById("area-button"),
@@ -996,8 +997,26 @@ function updateAddLocationModeUi(mode) {
     button.classList.toggle("is-active", button.dataset.locationMode === mode);
   });
   const editable = mode === "coordinates";
+  el.addLocationDetails.hidden = mode === "current";
   document.getElementById("add-store-latitude").readOnly = !editable;
   document.getElementById("add-store-longitude").readOnly = !editable;
+}
+
+async function fillAddressFromCoordinates(location) {
+  try {
+    const geocoder = new google.maps.Geocoder();
+    const response = await geocoder.geocode({ location });
+    const result = response.results?.[0];
+    if (!result) return;
+    const component = (type) => result.address_components?.find((entry) => entry.types.includes(type));
+    const city = component("locality") || component("administrative_area_level_2");
+    const stateName = component("administrative_area_level_1");
+    document.getElementById("add-store-address").value = result.formatted_address || "";
+    document.getElementById("add-store-city").value = city?.long_name || "";
+    document.getElementById("add-store-state").value = stateName?.long_name || "";
+  } catch (error) {
+    console.warn("Reverse geocoding failed for the new store location.", error);
+  }
 }
 
 async function setAddLocationMode(mode) {
@@ -1020,6 +1039,7 @@ async function setAddLocationMode(mode) {
       };
       document.getElementById("add-store-latitude").value = location.lat.toFixed(6);
       document.getElementById("add-store-longitude").value = location.lng.toFixed(6);
+      await fillAddressFromCoordinates(location);
       state.addPinMarker = new google.maps.Marker({
         map,
         position: location,

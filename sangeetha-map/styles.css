@@ -716,16 +716,16 @@ textarea {
   border: 1px solid rgba(37, 99, 235, 0.22);
   border-radius: 12px;
   background: rgba(248, 250, 252, 0.96);
-  color: var(--blue-deep);
+  color: #2456c9;
   cursor: pointer;
   font-size: 0.72rem;
   font-weight: 700;
 }
 
 .location-mode-button.is-active {
-  border-color: var(--blue);
-  background: var(--blue);
-  color: #fff;
+  border-color: rgba(37, 99, 235, 0.42);
+  background: #eef4ff;
+  color: #1d4ed8;
 }
 
 .location-mode-status {

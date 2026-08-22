@@ -140,29 +140,31 @@
               <button class="location-mode-button" type="button" data-location-mode="drop-pin">Drop Pin</button>
             </div>
             <p class="location-mode-status" id="add-location-status">Enter the store coordinates below.</p>
-            <div class="sheet-grid">
+            <div class="add-location-details" id="add-location-details">
+              <div class="sheet-grid">
+                <label class="sheet-field">
+                  <span>Latitude</span>
+                  <input id="add-store-latitude" type="text" inputmode="decimal" required autocomplete="off" />
+                </label>
+                <label class="sheet-field">
+                  <span>Longitude</span>
+                  <input id="add-store-longitude" type="text" inputmode="decimal" required autocomplete="off" />
+                </label>
+              </div>
               <label class="sheet-field">
-                <span>Latitude</span>
-                <input id="add-store-latitude" type="text" inputmode="decimal" required autocomplete="off" />
+                <span>Address</span>
+                <textarea id="add-store-address" rows="3"></textarea>
               </label>
-              <label class="sheet-field">
-                <span>Longitude</span>
-                <input id="add-store-longitude" type="text" inputmode="decimal" required autocomplete="off" />
-              </label>
-            </div>
-            <label class="sheet-field">
-              <span>Address</span>
-              <textarea id="add-store-address" rows="3"></textarea>
-            </label>
-            <div class="sheet-grid">
-              <label class="sheet-field">
-                <span>City</span>
-                <input id="add-store-city" type="text" autocomplete="off" />
-              </label>
-              <label class="sheet-field">
-                <span>State</span>
-                <input id="add-store-state" type="text" autocomplete="off" />
-              </label>
+              <div class="sheet-grid">
+                <label class="sheet-field">
+                  <span>City</span>
+                  <input id="add-store-city" type="text" autocomplete="off" />
+                </label>
+                <label class="sheet-field">
+                  <span>State</span>
+                  <input id="add-store-state" type="text" autocomplete="off" />
+                </label>
+              </div>
             </div>
             <label class="sheet-field">
               <span>Store Sqft</span>
