@@ -172,10 +172,10 @@ textarea {
 
 .state-counts-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
+  overflow: hidden;
   padding-bottom: 2px;
-  scrollbar-width: thin;
 }
 
 .state-count-pill {
@@ -200,6 +200,12 @@ textarea {
 .state-count-pill .state-count-code {
   color: var(--ink);
   font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.state-count-pill .state-count-total {
+  color: var(--blue);
+  font-size: 0.72rem;
   font-weight: 800;
 }
 

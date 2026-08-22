@@ -1485,7 +1485,9 @@ function renderStateCounts(stores) {
     const item = document.createElement("span");
     item.className = "state-count-pill";
     const code = STATE_CODES[region] || region.slice(0, 2).toUpperCase();
-    item.innerHTML = `<strong class="state-count-code">${escapeHtml(code)}</strong><span>${escapeHtml(region)}</span><strong>${count}</strong>`;
+    item.title = `${region}: ${count} locations`;
+    item.setAttribute("aria-label", `${region}: ${count} locations`);
+    item.innerHTML = `<strong class="state-count-code">${escapeHtml(code)}</strong><span class="state-count-total">${count}</span>`;
     el.stateCountsList.appendChild(item);
   });
   el.stateCountsCard.hidden = !regions.length;
