@@ -52,6 +52,19 @@ const CLOSED_BUSINESS_STATUSES = new Set([
   "CLOSED_PERMANENTLY",
 ]);
 
+const STATE_CODES = {
+  "Andhra Pradesh": "AP",
+  Delhi: "DL",
+  Goa: "GA",
+  Gujarat: "GJ",
+  Karnataka: "KA",
+  Kerala: "KL",
+  Maharashtra: "MH",
+  Puducherry: "PY",
+  "Tamil Nadu": "TN",
+  Telangana: "TS",
+};
+
 const el = {
   addStoreButton: document.getElementById("add-store-button"),
   addStoreForm: document.getElementById("add-store-form"),
@@ -1471,7 +1484,8 @@ function renderStateCounts(stores) {
   regions.forEach(([region, count]) => {
     const item = document.createElement("span");
     item.className = "state-count-pill";
-    item.innerHTML = `<span>${escapeHtml(region)}</span><strong>${count}</strong>`;
+    const code = STATE_CODES[region] || region.slice(0, 2).toUpperCase();
+    item.innerHTML = `<strong class="state-count-code">${escapeHtml(code)}</strong><span>${escapeHtml(region)}</span><strong>${count}</strong>`;
     el.stateCountsList.appendChild(item);
   });
   el.stateCountsCard.hidden = !regions.length;

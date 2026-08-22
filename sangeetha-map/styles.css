@@ -197,6 +197,12 @@ textarea {
   font-size: 0.72rem;
 }
 
+.state-count-pill .state-count-code {
+  color: var(--ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .map-actions {
   display: flex;
   align-items: center;
