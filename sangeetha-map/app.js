@@ -132,6 +132,7 @@ const el = {
   storeSearchInput: document.getElementById("store-search-input"),
   storeSearchResults: document.getElementById("store-search-results"),
   storeSheet: document.getElementById("store-sheet"),
+  storeSheetBackdrop: document.getElementById("store-sheet-backdrop"),
 };
 
 let mapsLoaderPromise = null;
@@ -926,6 +927,7 @@ function showSheetMode(mode) {
   const hidden = state.sheetMode === "hidden";
   el.storeSheet.hidden = hidden;
   el.storeSheet.classList.toggle("is-add-mode", state.sheetMode === "add");
+  el.storeSheetBackdrop.hidden = state.sheetMode !== "add";
   el.sheetStoreView.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
   el.addStoreView.hidden = state.sheetMode !== "add";
   el.proximityPanel.hidden = true;
