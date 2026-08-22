@@ -107,11 +107,12 @@ const el = {
   mapToastTitle: document.getElementById("map-toast-title"),
   proximityList: document.getElementById("proximity-list"),
   proximityClearButton: document.getElementById("proximity-clear-button"),
-  proximityDoneButton: document.getElementById("proximity-done-button"),
   proximityOriginLabel: document.getElementById("proximity-origin-label"),
   proximityPanel: document.getElementById("proximity-panel"),
   proximitySummary: document.getElementById("proximity-summary"),
   radiusOptions: document.getElementById("radius-options"),
+  customRadiusInput: document.getElementById("custom-radius-input"),
+  customRadiusButton: document.getElementById("custom-radius-button"),
   regionFilter: document.getElementById("region-filter"),
   savedAreasToggle: document.getElementById("saved-areas-toggle"),
   sheetAddress: document.getElementById("sheet-address"),
@@ -719,8 +720,10 @@ async function showCurrentLocation() {
         position: location,
         title: "Your current location",
         content: createLocationNode(),
+        gmpClickable: true,
         zIndex: 2_000_000,
       });
+      state.locationMarker.addEventListener("gmp-click", renderLocationSheet);
     } else {
       state.locationMarker.position = location;
       state.locationMarker.map = map;
@@ -930,7 +933,8 @@ function showSheetMode(mode) {
   el.storeSheetBackdrop.hidden = state.sheetMode !== "add";
   el.sheetStoreView.hidden = state.sheetMode !== "store" && state.sheetMode !== "location";
   el.addStoreView.hidden = state.sheetMode !== "add";
-  el.proximityPanel.hidden = true;
+  el.proximityPanel.hidden = !state.proximityOrigin
+    || (state.sheetMode !== "store" && state.sheetMode !== "location");
   el.areaPanel.hidden = !state.areaSelectedIds.size;
   if (hidden) {
     setSheetFeedback("");
@@ -1660,8 +1664,12 @@ function renderProximitySelection() {
 
 function applyProximityRadius(radiusKm) {
   if (!state.proximityOrigin) return;
+  if (!Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > 500) return;
   state.proximityPendingRadiusKm = radiusKm;
   state.proximityRadiusKm = radiusKm;
+  el.customRadiusInput.value = getRadiusOptions().some((button) => Number(button.dataset.radiusKm) === radiusKm)
+    ? ""
+    : String(radiusKm);
 
   const origin = new google.maps.LatLng(
     state.proximityOrigin.latitude,
@@ -1698,11 +1706,20 @@ function applyProximityRadius(radiusKm) {
   updateMapClearButtonVisibility();
 }
 
+function applyCustomProximityRadius() {
+  const radiusKm = Number(el.customRadiusInput.value);
+  if (!Number.isFinite(radiusKm) || radiusKm <= 0 || radiusKm > 500) {
+    el.customRadiusInput.setCustomValidity("Enter a distance between 0.1 and 500 km.");
+    el.customRadiusInput.reportValidity();
+    return;
+  }
+  el.customRadiusInput.setCustomValidity("");
+  selectPendingProximityRadius(radiusKm);
+}
+
 function selectPendingProximityRadius(radiusKm) {
-  if (!state.proximityOrigin) return;
-  state.proximityPendingRadiusKm = radiusKm;
-  renderProximitySelection();
-  updateMapClearButtonVisibility();
+  if (!state.proximityOrigin || !Number.isFinite(radiusKm) || radiusKm <= 0) return;
+  applyProximityRadius(radiusKm);
 }
 
 function commitProximityRadius() {
@@ -1722,6 +1739,8 @@ function commitProximityRadius() {
 
 function clearCommittedProximityRadius() {
   clearProximitySelection({ keepOrigin: true });
+  el.customRadiusInput.value = "";
+  el.customRadiusInput.setCustomValidity("");
   renderProximitySelection();
   updateMarkerStyles();
   updateMapClearButtonVisibility();
@@ -2054,8 +2073,11 @@ function bindEvents() {
       selectPendingProximityRadius(Number(button.dataset.radiusKm));
     });
   });
-  el.proximityDoneButton.addEventListener("click", commitProximityRadius);
   el.proximityClearButton.addEventListener("click", clearCommittedProximityRadius);
+  el.customRadiusButton.addEventListener("click", applyCustomProximityRadius);
+  el.customRadiusInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyCustomProximityRadius();
+  });
 }
 
 async function init() {

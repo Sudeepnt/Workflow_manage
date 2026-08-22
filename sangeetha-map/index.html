@@ -180,17 +180,18 @@
             <button class="radius-chip" type="button" data-radius-km="10">10 km</button>
             <button class="radius-chip" type="button" data-radius-km="20">20 km</button>
             <button class="radius-chip" type="button" data-radius-km="30">30 km</button>
-            <button class="radius-chip" type="button" data-radius-km="40">40 km</button>
-            <button class="radius-chip" type="button" data-radius-km="50">50 km</button>
+          </div>
+          <div class="custom-radius-row">
+            <label for="custom-radius-input">Custom</label>
+            <div class="custom-radius-control">
+              <input id="custom-radius-input" type="number" min="0.1" max="500" step="0.1" inputmode="decimal" placeholder="Enter km" />
+              <button id="custom-radius-button" type="button">Apply</button>
+            </div>
           </div>
           <div class="proximity-actions">
-            <button class="proximity-action-button proximity-action-primary" id="proximity-done-button" type="button">
-              <i class="button-icon" data-lucide="check" aria-hidden="true"></i>
-              <span>Done</span>
-            </button>
             <button class="proximity-action-button" id="proximity-clear-button" type="button">
-              <i class="button-icon button-icon-danger" data-lucide="trash-2" aria-hidden="true"></i>
-              <span>Clear</span>
+              <i class="button-icon" data-lucide="rotate-ccw" aria-hidden="true"></i>
+              <span>Reset radius</span>
             </button>
           </div>
           <p class="selection-summary" id="proximity-summary"></p>
