@@ -93,9 +93,9 @@ textarea {
 .map-control-stack {
   position: absolute;
   z-index: 4;
-  top: 20px;
-  left: 24px;
-  right: 24px;
+  top: 10px;
+  left: 12px;
+  right: 12px;
   display: grid;
   gap: 16px;
 }
@@ -352,9 +352,9 @@ textarea {
 .map-modebar {
   position: absolute;
   z-index: 5;
-  left: 24px;
-  right: 24px;
-  bottom: 20px;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr) minmax(0, 0.9fr);
   gap: 14px;
@@ -959,9 +959,9 @@ textarea {
 
 @media (max-width: 430px) {
   .map-control-stack {
-    top: 16px;
-    left: 16px;
-    right: 16px;
+    top: 8px;
+    left: 8px;
+    right: 8px;
     gap: 12px;
   }
 
@@ -1026,9 +1026,9 @@ textarea {
   }
 
   .map-modebar {
-    left: 16px;
-    right: 16px;
-    bottom: 14px;
+    left: 8px;
+    right: 8px;
+    bottom: 7px;
     grid-template-columns: 52px minmax(0, 1fr) minmax(0, 0.78fr);
     gap: 8px;
     padding: 10px;
