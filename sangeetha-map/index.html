@@ -116,19 +116,64 @@
             </a>
           </div>
 
-          <form class="store-edit-form" id="sqft-form">
-            <label class="sheet-field sqft-field">
-              <span>Store Sqft</span>
-              <span class="sqft-row">
-                <input id="sqft-input" type="text" inputmode="numeric" placeholder="1850" autocomplete="off" />
-                <button class="sheet-save-button" id="sqft-save-button" type="submit">Save Sqft</button>
-              </span>
+          <div class="store-management-actions">
+            <button class="sheet-edit-button" id="edit-store-button" type="button">
+              <i class="button-icon" data-lucide="pencil" aria-hidden="true"></i>
+              <span>Edit Store</span>
+            </button>
+            <button class="sheet-delete-button" id="delete-store-button" type="button">
+              <i class="button-icon" data-lucide="trash-2" aria-hidden="true"></i>
+              <span>Delete Store</span>
+            </button>
+          </div>
+
+          <form class="store-edit-form" id="store-edit-form" hidden>
+            <p class="sheet-form-note">Update the store details or move its map pin.</p>
+            <label class="sheet-field">
+              <span>Store Name</span>
+              <input id="edit-store-name" type="text" required autocomplete="off" />
             </label>
+            <label class="sheet-field">
+              <span>Address</span>
+              <textarea id="edit-store-address" rows="2" autocomplete="street-address"></textarea>
+            </label>
+            <div class="sheet-grid">
+              <label class="sheet-field">
+                <span>City</span>
+                <input id="edit-store-city" type="text" autocomplete="address-level2" />
+              </label>
+              <label class="sheet-field">
+                <span>State</span>
+                <input id="edit-store-state" type="text" autocomplete="address-level1" />
+              </label>
+            </div>
+            <label class="sheet-field">
+              <span>Phone</span>
+              <input id="edit-store-phone" type="tel" autocomplete="tel" />
+            </label>
+            <label class="sheet-field">
+              <span>Hours</span>
+              <textarea id="edit-store-hours" rows="2" autocomplete="off"></textarea>
+            </label>
+            <div class="sheet-grid">
+              <label class="sheet-field">
+                <span>Latitude</span>
+                <input id="edit-store-latitude" type="text" inputmode="decimal" required autocomplete="off" />
+              </label>
+              <label class="sheet-field">
+                <span>Longitude</span>
+                <input id="edit-store-longitude" type="text" inputmode="decimal" required autocomplete="off" />
+              </label>
+            </div>
+            <label class="sheet-field">
+              <span>Store Sqft</span>
+              <input id="edit-store-sqft" type="text" inputmode="numeric" autocomplete="off" />
+            </label>
+            <div class="store-edit-form-actions">
+              <button class="sheet-cancel-button" id="cancel-store-edit-button" type="button">Cancel</button>
+              <button class="sheet-save-button" id="save-store-button" type="submit">Save Changes</button>
+            </div>
           </form>
-          <button class="sheet-delete-button" id="delete-store-button" type="button" hidden>
-            <i class="button-icon" data-lucide="trash-2" aria-hidden="true"></i>
-            <span>Delete Store</span>
-          </button>
         </div>
 
         <div class="sheet-view" id="sheet-add-view" hidden>

@@ -94,7 +94,19 @@ const el = {
   areaRenameButton: document.getElementById("area-rename-button"),
   areaSummary: document.getElementById("area-summary"),
   citySearchHost: document.getElementById("city-search-host"),
+  cancelStoreEditButton: document.getElementById("cancel-store-edit-button"),
   deleteStoreButton: document.getElementById("delete-store-button"),
+  editStoreButton: document.getElementById("edit-store-button"),
+  editStoreAddress: document.getElementById("edit-store-address"),
+  editStoreCity: document.getElementById("edit-store-city"),
+  editStoreForm: document.getElementById("store-edit-form"),
+  editStoreHours: document.getElementById("edit-store-hours"),
+  editStoreLatitude: document.getElementById("edit-store-latitude"),
+  editStoreLongitude: document.getElementById("edit-store-longitude"),
+  editStoreName: document.getElementById("edit-store-name"),
+  editStorePhone: document.getElementById("edit-store-phone"),
+  editStoreSqft: document.getElementById("edit-store-sqft"),
+  editStoreState: document.getElementById("edit-store-state"),
   locationButton: document.getElementById("location-button"),
   map: document.getElementById("map"),
   mapHelperCard: document.getElementById("map-helper-card"),
@@ -124,8 +136,6 @@ const el = {
   sheetMeta: document.getElementById("sheet-meta"),
   sheetStoreView: document.getElementById("sheet-store-view"),
   sheetTitle: document.getElementById("sheet-title"),
-  sqftForm: document.getElementById("sqft-form"),
-  sqftInput: document.getElementById("sqft-input"),
   statusCard: document.getElementById("status-card"),
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
@@ -945,6 +955,25 @@ function showSheetMode(mode) {
   }
 }
 
+function setStoreEditMode(editing) {
+  el.editStoreForm.hidden = !editing;
+  el.editStoreButton.hidden = editing;
+  el.deleteStoreButton.hidden = editing;
+  if (!editing) setSheetFeedback("");
+}
+
+function populateStoreEditForm(store) {
+  el.editStoreName.value = store.name || "";
+  el.editStoreAddress.value = store.address || "";
+  el.editStoreCity.value = store.city || "";
+  el.editStoreState.value = store.state || "";
+  el.editStorePhone.value = store.phone || "";
+  el.editStoreHours.value = store.hours || "";
+  el.editStoreLatitude.value = Number(store.latitude).toFixed(6);
+  el.editStoreLongitude.value = Number(store.longitude).toFixed(6);
+  el.editStoreSqft.value = store.store_sqft ? String(store.store_sqft) : "";
+}
+
 function renderStoreSheet(store) {
   void renderSelectedStoreOverlay(store);
   state.selectedStoreId = getStoreKey(store);
@@ -963,8 +992,8 @@ function renderStoreSheet(store) {
   el.sheetAddress.textContent = store.address || "Address unavailable";
   el.sheetCoordinates.textContent = `${Number(store.latitude).toFixed(6)}, ${Number(store.longitude).toFixed(6)}`;
   el.sheetLink.href = store.google_maps_uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${store.latitude},${store.longitude}`)}`;
-  el.sqftInput.value = store.store_sqft ? String(store.store_sqft) : "";
-  el.deleteStoreButton.hidden = store.data_source !== "manual";
+  populateStoreEditForm(store);
+  setStoreEditMode(false);
   setSheetFeedback("");
   renderProximitySelection();
   showSheetMode("store");
@@ -986,7 +1015,7 @@ function renderLocationSheet() {
   el.sheetLink.href = state.proximityOrigin
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${state.proximityOrigin.latitude},${state.proximityOrigin.longitude}`)}`
     : "#";
-  el.sqftInput.value = "";
+  setStoreEditMode(false);
   renderProximitySelection();
   showSheetMode("location");
   updateMarkerStyles();
@@ -1939,7 +1968,7 @@ async function refreshStores() {
   }
 }
 
-async function saveStoreSqft(event) {
+async function saveStoreEdits(event) {
   event.preventDefault();
   if (!state.selectedStoreId) return;
 
@@ -1954,13 +1983,23 @@ async function saveStoreSqft(event) {
       },
       body: JSON.stringify({
         id: store.id,
-        storeSqft: el.sqftInput.value,
+        name: el.editStoreName.value,
+        address: el.editStoreAddress.value,
+        city: el.editStoreCity.value,
+        state: el.editStoreState.value,
+        phone: el.editStorePhone.value,
+        hours: el.editStoreHours.value,
+        latitude: el.editStoreLatitude.value,
+        longitude: el.editStoreLongitude.value,
+        storeSqft: el.editStoreSqft.value,
       }),
     });
     const nextStore = payload.store;
     state.stores = state.stores.map((entry) => (entry.id === nextStore.id ? nextStore : entry));
-    setSheetFeedback(`Store #${formatStoreNumber(nextStore)} sqft saved.`);
+    state.filteredStores = state.filteredStores.map((entry) => (entry.id === nextStore.id ? nextStore : entry));
+    await renderMarkers(state.filteredStores);
     renderStoreSheet(nextStore);
+    setSheetFeedback(`Store #${formatStoreNumber(nextStore)} updated.`);
   } catch (error) {
     setSheetFeedback(error.message, true);
   }
@@ -2008,10 +2047,10 @@ async function createManualStore(event) {
   }
 }
 
-async function deleteSelectedManualStore() {
+async function deleteSelectedStore() {
   if (!state.selectedStoreId) return;
   const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
-  if (!store || store.data_source !== "manual") return;
+  if (!store) return;
   if (!window.confirm(`Delete Store #${formatStoreNumber(store)}?`)) return;
 
   el.deleteStoreButton.disabled = true;
@@ -2023,13 +2062,10 @@ async function deleteSelectedManualStore() {
       },
       body: JSON.stringify({ id: store.id }),
     });
-    state.stores = state.stores.filter((entry) => entry.id !== store.id);
-    state.filteredStores = state.filteredStores.filter((entry) => entry.id !== store.id);
     state.selectedStoreId = null;
     state.selectedMarkerId = null;
     showSheetMode(null);
-    renderMarkers();
-    populateRegionFilter();
+    await loadStores();
     updateMapClearButtonVisibility();
   } catch (error) {
     setSheetFeedback(error.message, true);
@@ -2088,9 +2124,18 @@ function bindEvents() {
   el.areaClearButton.addEventListener("click", () => {
     clearMapActions();
   });
-  el.sqftForm.addEventListener("submit", saveStoreSqft);
+  el.editStoreButton.addEventListener("click", () => {
+    setStoreEditMode(true);
+    el.editStoreName.focus();
+  });
+  el.cancelStoreEditButton.addEventListener("click", () => {
+    const store = state.stores.find((entry) => getStoreKey(entry) === state.selectedStoreId);
+    if (store) populateStoreEditForm(store);
+    setStoreEditMode(false);
+  });
+  el.editStoreForm.addEventListener("submit", saveStoreEdits);
   el.addStoreForm.addEventListener("submit", createManualStore);
-  el.deleteStoreButton.addEventListener("click", deleteSelectedManualStore);
+  el.deleteStoreButton.addEventListener("click", deleteSelectedStore);
   getRadiusOptions().forEach((button) => {
     button.addEventListener("click", () => {
       if (!state.proximityOrigin) return;

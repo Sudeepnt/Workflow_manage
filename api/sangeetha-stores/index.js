@@ -176,6 +176,17 @@ async function updateStore(req, res) {
   }
 
   const updates = {};
+  if (body.name !== undefined) updates.name = normalizeText(body.name, "Store name", { required: true });
+  if (body.address !== undefined) updates.address = normalizeText(body.address, "Address");
+  if (body.city !== undefined) updates.city = normalizeText(body.city, "City");
+  if (body.state !== undefined) updates.state = normalizeText(body.state, "State");
+  if (body.phone !== undefined) updates.phone = normalizeText(body.phone, "Phone");
+  if (body.hours !== undefined) updates.hours = normalizeText(body.hours, "Hours");
+  if (body.latitude !== undefined) updates.latitude = normalizeCoordinate(body.latitude, "Latitude", -90, 90);
+  if (body.longitude !== undefined) updates.longitude = normalizeCoordinate(body.longitude, "Longitude", -180, 180);
+  if (body.latitude !== undefined && body.longitude !== undefined) {
+    updates.google_maps_uri = buildGoogleMapsUri(updates.latitude, updates.longitude);
+  }
   const normalizedSqft = normalizeSqft(body.storeSqft);
   if (normalizedSqft !== undefined) {
     updates.store_sqft = normalizedSqft;
@@ -199,7 +210,7 @@ async function updateStore(req, res) {
   });
 }
 
-async function deleteManualStore(req, res) {
+async function deleteStore(req, res) {
   const body = await readJsonBody(req);
   const storeId = Number.parseInt(String(body.id ?? ""), 10);
   if (!Number.isFinite(storeId) || storeId <= 0) {
@@ -207,31 +218,15 @@ async function deleteManualStore(req, res) {
   }
 
   const supabase = getSupabaseAdminClient();
-  const { data: store, error: readError } = await supabase
-    .from("sangeetha_stores")
-    .select("id, store_number, data_source")
-    .eq("id", storeId)
-    .single();
-
-  if (readError) throw readError;
-  if (store?.data_source !== "manual") {
-    sendJson(res, 403, {
-      error: "Only manually added stores can be deleted.",
-    });
-    return;
-  }
-
   const { error } = await supabase
     .from("sangeetha_stores")
     .delete()
-    .eq("id", storeId)
-    .eq("data_source", "manual");
+    .eq("id", storeId);
 
   if (error) throw error;
 
   sendJson(res, 200, {
     deletedStoreId: storeId,
-    deletedStoreNumber: store.store_number,
   });
 }
 
@@ -250,7 +245,7 @@ module.exports = async function handler(req, res) {
       return;
     }
     if (req.method === "DELETE") {
-      await deleteManualStore(req, res);
+      await deleteStore(req, res);
       return;
     }
 

@@ -750,6 +750,24 @@ textarea {
   margin-top: 18px;
 }
 
+.store-management-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.sheet-edit-button,
+.sheet-cancel-button {
+  min-height: 48px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: 14px;
+  background: rgba(239, 246, 255, 0.96);
+  color: var(--blue-deep);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .location-mode-picker {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -797,6 +815,13 @@ textarea {
 .selection-panel {
   padding-top: 18px;
   border-top: 1px solid rgba(100, 116, 139, 0.16);
+}
+
+.sheet-form-note {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .sheet-field {
@@ -856,6 +881,18 @@ textarea {
   font-weight: 600;
 }
 
+.store-edit-form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.sheet-cancel-button {
+  background: rgba(248, 250, 252, 0.95);
+  color: var(--muted);
+}
+
 .sheet-delete-button {
   width: 100%;
   min-height: 48px;
@@ -870,6 +907,24 @@ textarea {
   color: #c42b22;
   font-size: 0.88rem;
   font-weight: 600;
+}
+
+.sheet-edit-button,
+.sheet-cancel-button,
+.sheet-delete-button,
+.sheet-save-button {
+  cursor: pointer;
+}
+
+.sheet-edit-button:hover,
+.sheet-cancel-button:hover,
+.sheet-delete-button:hover,
+.sheet-save-button:hover {
+  filter: brightness(0.98);
+}
+
+.store-management-actions .sheet-delete-button {
+  margin-top: 0;
 }
 
 .sheet-grid {
