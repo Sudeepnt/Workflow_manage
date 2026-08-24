@@ -571,13 +571,12 @@ async function focusStoreFromSearch(store) {
 
   const coordinates = getStoreCoordinates(store);
   state.map.panTo(coordinates);
-  state.map.setZoom(16);
+  // Search should land on the actual store, not on a cluster containing it.
+  // The selected overlay is rendered above the cluster layer by showStoreSheet.
+  state.map.setZoom(17);
   state.selectedMarkerId = getStoreKey(store);
-  state.selectedStoreId = null;
-  showSheetMode(null);
-  updateMarkerStyles();
-  updateMapClearButtonVisibility();
-  setStatus("Store located", `Tap store #${formatStoreNumber(store)} on the map for details.`);
+  showStoreSheet(store);
+  setStatus("Store opened", `Store #${formatStoreNumber(store)} is selected.`);
 }
 
 function renderSearchResults(query) {
