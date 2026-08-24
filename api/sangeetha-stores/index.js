@@ -142,18 +142,45 @@ async function listStores(res) {
 async function createManualStore(req, res) {
   const body = await readJsonBody(req);
   const supabase = getSupabaseAdminClient();
+  const restoringCatalogStore = body.dataSource === "catalog";
+  const storeNumber = body.storeNumber === undefined || body.storeNumber === null || body.storeNumber === ""
+    ? undefined
+    : Number.parseInt(String(body.storeNumber), 10);
+  const officialStoreId = body.officialStoreId === undefined || body.officialStoreId === null || body.officialStoreId === ""
+    ? undefined
+    : Number.parseInt(String(body.officialStoreId), 10);
+  if (restoringCatalogStore && (!Number.isFinite(storeNumber) || storeNumber <= 0)) {
+    throw new Error("Store number is required when restoring a catalog store.");
+  }
+  if (restoringCatalogStore && (!Number.isFinite(officialStoreId) || officialStoreId <= 0)) {
+    throw new Error("Official store id is required when restoring a catalog store.");
+  }
   const payload = {
-    data_source: "manual",
-    verification_status: "manual",
+    data_source: restoringCatalogStore ? "catalog" : "manual",
+    verification_status: restoringCatalogStore
+      ? normalizeText(body.verificationStatus, "Verification status") || "google_verified"
+      : "manual",
     name: normalizeText(body.name, "Store name", { required: true }),
     latitude: normalizeCoordinate(body.latitude, "Latitude", -90, 90),
     longitude: normalizeCoordinate(body.longitude, "Longitude", -180, 180),
     address: normalizeText(body.address, "Address"),
     city: normalizeText(body.city, "City"),
     state: normalizeText(body.state, "State"),
+    phone: normalizeText(body.phone, "Phone"),
+    hours: normalizeText(body.hours, "Hours"),
     store_sqft: normalizeSqft(body.storeSqft),
   };
-  payload.google_maps_uri = buildGoogleMapsUri(payload.latitude, payload.longitude);
+  if (restoringCatalogStore) {
+    payload.store_number = storeNumber;
+    payload.official_store_id = officialStoreId;
+    payload.google_place_id = normalizeText(body.googlePlaceId, "Google place id");
+    payload.store_code = normalizeText(body.storeCode, "Store code");
+    payload.business_status = normalizeText(body.businessStatus, "Business status");
+    payload.google_maps_uri = normalizeText(body.googleMapsUri, "Google Maps URI")
+      || buildGoogleMapsUri(payload.latitude, payload.longitude);
+  } else {
+    payload.google_maps_uri = buildGoogleMapsUri(payload.latitude, payload.longitude);
+  }
 
   const { data, error } = await supabase
     .from("sangeetha_stores")

@@ -9,6 +9,11 @@
   "reclassified_valid_after_name_address_search": [5, 19, 47, 65, 66],
   "confirmed_permanently_closed_by_google": [90],
   "coordinates_corrected_after_google_search": [5],
+  "deleted_cross_checked_at": "2026-08-24",
+  "deleted_cross_check_method": "Google Search by Sangeetha name and full address, followed by the official store page and Google Maps place coordinates. Coordinate-only no-listing results were not treated as proof of closure.",
+  "restored_after_google_search": [2, 3, 9, 15, 16, 29, 44, 45, 51, 62, 63, 74, 75, 78, 80, 89, 91, 92, 137, 499, 863, 864, 878, 898, 899, 900, 902, 918],
+  "confirmed_permanently_closed_after_google_search": [7, 21, 24, 42, 46, 52, 55, 61],
+  "no_reliable_current_google_listing": [86],
   "reason": "Coordinate-only Google Maps results can be false positives for official-locator-only stores; verify by Sangeetha name, full address, and phone before classifying as wrong. Distinguish daily 'Closed for the day' hours from a permanent closure.",
   "rechecked_ok_after_browser_retry": [552],
   "last_tested_store_numbers": [264, 403, 482, 514, 557, 463, 586, 66, 391, 645, 532, 713, 667, 238, 113, 373, 766, 294, 201, 5, 315, 214, 319, 141, 555, 850, 700, 742, 852, 216, 773, 688, 703, 856, 399, 370, 313, 130, 271, 90, 304, 494, 602, 578, 441, 124, 127, 101, 372, 656, 784, 205, 356, 712, 193, 19, 536, 809, 184, 832, 785, 242, 735, 415, 456, 245, 520, 913, 65, 782, 359, 780, 737, 604, 531, 210, 733, 485, 448, 835, 215, 99, 234, 47, 251, 846, 188, 720, 103, 590, 388, 409, 342, 569, 820, 479, 516, 548, 695, 729]
