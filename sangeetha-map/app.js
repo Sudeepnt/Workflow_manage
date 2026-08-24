@@ -848,6 +848,50 @@ function clearStateCountMarkers() {
   state.stateCountMarkers = [];
 }
 
+function getStateBadgePosition(group) {
+  const center = {
+    lat: group.lat / group.count,
+    lng: group.lng / group.count,
+  };
+  const latitudes = group.stores.map((store) => Number(store.latitude));
+  const longitudes = group.stores.map((store) => Number(store.longitude));
+  const minLat = Math.min(...latitudes);
+  const maxLat = Math.max(...latitudes);
+  const minLng = Math.min(...longitudes);
+  const maxLng = Math.max(...longitudes);
+  const latPadding = Math.max((maxLat - minLat) * 0.08, 0.6);
+  const lngPadding = Math.max((maxLng - minLng) * 0.08, 0.6);
+  const minAllowedLat = minLat - latPadding;
+  const maxAllowedLat = maxLat + latPadding;
+  const minAllowedLng = minLng - lngPadding;
+  const maxAllowedLng = maxLng + lngPadding;
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  // Keep the badge close to the state's store footprint, but move it away
+  // from a pin when the centroid lands directly on top of one.
+  const offsets = [
+    [0, 0],
+    [0.58, 0], [-0.58, 0], [0, 0.68], [0, -0.68],
+    [0.48, 0.58], [0.48, -0.58], [-0.48, 0.58], [-0.48, -0.58],
+  ];
+  const candidates = offsets.map(([latOffset, lngOffset]) => ({
+    lat: clamp(center.lat + latOffset, minAllowedLat, maxAllowedLat),
+    lng: clamp(center.lng + lngOffset, minAllowedLng, maxAllowedLng),
+  }));
+  const distanceFromPins = (candidate) => Math.min(...group.stores.map((store) => {
+    const latDistance = (candidate.lat - Number(store.latitude)) * 111;
+    const lngDistance = (candidate.lng - Number(store.longitude)) * 111
+      * Math.cos((candidate.lat * Math.PI) / 180);
+    return Math.hypot(latDistance, lngDistance);
+  }));
+
+  if (distanceFromPins(center) > 100) return center;
+
+  return candidates
+    .map((candidate, index) => ({ candidate, index, distance: distanceFromPins(candidate) }))
+    .sort((left, right) => right.distance - left.distance || left.index - right.index)[0].candidate;
+}
+
 async function renderStateCountMarkers(stores) {
   clearStateCountMarkers();
   if (!state.map || !stores.length) return;
@@ -859,23 +903,21 @@ async function renderStateCountMarkers(stores) {
     const longitude = Number(store.longitude);
     const region = String(store.state || "Unknown").trim();
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-    const current = grouped.get(region) || { lat: 0, lng: 0, count: 0 };
+    const current = grouped.get(region) || { lat: 0, lng: 0, count: 0, stores: [] };
     current.lat += latitude;
     current.lng += longitude;
     current.count += 1;
+    current.stores.push(store);
     grouped.set(region, current);
   });
 
-  grouped.forEach(({ lat, lng, count }, region) => {
-    const position = {
-      lat: lat / count,
-      lng: lng / count,
-    };
+  grouped.forEach((group, region) => {
+    const position = getStateBadgePosition(group);
     const code = STATE_CODES[region] || region.slice(0, 2).toUpperCase();
     const marker = new AdvancedMarkerElement({
       map: state.map,
       position,
-      content: createStateCountNode(code, count, region),
+      content: createStateCountNode(code, group.count, region),
       zIndex: 800000,
     });
     state.stateCountMarkers.push(marker);
