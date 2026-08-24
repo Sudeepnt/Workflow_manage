@@ -211,7 +211,9 @@ async function updateStore(req, res) {
   if (body.hours !== undefined) updates.hours = normalizeText(body.hours, "Hours");
   if (body.latitude !== undefined) updates.latitude = normalizeCoordinate(body.latitude, "Latitude", -90, 90);
   if (body.longitude !== undefined) updates.longitude = normalizeCoordinate(body.longitude, "Longitude", -180, 180);
-  if (body.latitude !== undefined && body.longitude !== undefined) {
+  if (body.googleMapsUri !== undefined) {
+    updates.google_maps_uri = normalizeText(body.googleMapsUri, "Google Maps URI");
+  } else if (body.latitude !== undefined && body.longitude !== undefined) {
     updates.google_maps_uri = buildGoogleMapsUri(updates.latitude, updates.longitude);
   }
   const normalizedSqft = normalizeSqft(body.storeSqft);
