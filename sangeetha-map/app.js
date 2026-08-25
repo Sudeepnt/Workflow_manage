@@ -375,7 +375,7 @@ async function ensureMap() {
   state.map = new Map(el.map, {
     center: { lat: 22.9, lng: 79.1 },
     zoom: 5,
-    mapTypeId: "satellite",
+    mapTypeId: "hybrid",
     mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
     fullscreenControl: false,
     mapTypeControl: false,
