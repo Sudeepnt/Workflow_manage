@@ -375,6 +375,7 @@ async function ensureMap() {
   state.map = new Map(el.map, {
     center: { lat: 22.9, lng: 79.1 },
     zoom: 5,
+    mapTypeId: "satellite",
     mapId: state.config.googleMapsMapId || "DEMO_MAP_ID",
     fullscreenControl: false,
     mapTypeControl: false,
@@ -382,17 +383,6 @@ async function ensureMap() {
     minZoom: 4,
     gestureHandling: "greedy",
     clickableIcons: false,
-    styles: [
-      {
-        featureType: "administrative.province",
-        elementType: "geometry.stroke",
-        stylers: [
-          { color: "#d93025" },
-          { visibility: "on" },
-          { weight: 3 },
-        ],
-      },
-    ],
   });
   state.map.addListener("zoom_changed", updateStoreLayerVisibility);
   styleStateBoundaries(state.map);
