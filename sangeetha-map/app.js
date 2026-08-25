@@ -398,9 +398,9 @@ function styleStateBoundaries(map) {
       return;
     }
     stateLayer.style = () => ({
-      strokeColor: "#d93025",
+      strokeColor: "#ffffff",
       strokeOpacity: 0.95,
-      strokeWeight: 3,
+      strokeWeight: 5,
       fillOpacity: 0,
     });
   } catch (error) {
