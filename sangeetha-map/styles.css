@@ -1162,14 +1162,14 @@ textarea {
 
 .store-pin {
   position: relative;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 5px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 7px;
   border: 1.5px solid rgba(255, 255, 255, 0.94);
   border-radius: 7px;
-  background: linear-gradient(180deg, #7c6cff 0%, #5141dd 100%);
-  color: #fff;
-  box-shadow: 0 0 0 2px rgba(48, 38, 151, 0.32), 0 12px 24px rgba(48, 38, 151, 0.42);
+  background: linear-gradient(180deg, #d7ff4a 0%, #96e600 100%);
+  color: #10213b;
+  box-shadow: 0 0 0 2px rgba(90, 150, 0, 0.36), 0 12px 24px rgba(90, 150, 0, 0.44);
 }
 
 .store-pin::after {
@@ -1227,11 +1227,11 @@ textarea {
 }
 
 .store-pin.is-nearby {
-  box-shadow: 0 0 0 4px rgba(255, 139, 43, 0.42), 0 12px 24px rgba(48, 38, 151, 0.42);
+  box-shadow: 0 0 0 4px rgba(255, 139, 43, 0.42), 0 12px 24px rgba(90, 150, 0, 0.44);
 }
 
 .store-pin.is-area-selected {
-  box-shadow: 0 0 0 4px rgba(217, 48, 37, 0.26), 0 12px 24px rgba(48, 38, 151, 0.42);
+  box-shadow: 0 0 0 4px rgba(217, 48, 37, 0.26), 0 12px 24px rgba(90, 150, 0, 0.44);
 }
 
 .store-cluster {
