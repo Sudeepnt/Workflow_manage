@@ -179,7 +179,7 @@ textarea {
 .map-topbar {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(126px, 1fr) 48px minmax(136px, 156px);
+  grid-template-columns: minmax(220px, 1fr) 48px minmax(136px, 156px);
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -202,11 +202,30 @@ textarea {
   display: block;
   flex: 0 0 auto;
   width: auto;
-  height: 24px;
+  height: 72px;
+}
+
+.map-brand-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.map-brand-company {
+  font-weight: 750;
+}
+
+.map-brand-product {
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .region-control {
   min-width: 0;
+  width: 70%;
+  justify-self: end;
 }
 
 .region-control select {
@@ -1288,7 +1307,7 @@ textarea {
   }
 
   .map-topbar {
-    grid-template-columns: 126px 44px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 44px minmax(0, 0.7fr);
     gap: 8px;
     padding: 10px;
     border-radius: 22px;
@@ -1307,7 +1326,7 @@ textarea {
   }
 
   .map-brand-logo {
-    height: 17px;
+    height: 52px;
   }
 
   .region-control select {
