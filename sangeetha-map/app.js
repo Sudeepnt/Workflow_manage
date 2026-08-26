@@ -1246,7 +1246,7 @@ async function createStoreAtLocation(location) {
     updateAddLocationModeUi("coordinates");
     setAddLocationStatus("Enter the store coordinates below.");
     updateAddLocationActionState();
-    await loadStores();
+    await loadStores({ preserveViewport: true });
     showToast("Store created", `Store #${formatStoreNumber(payload.store)} was added.`);
   } catch (error) {
     setAddLocationStatus(error.message || "Could not create this store.");
@@ -1869,7 +1869,7 @@ function clearCommittedProximityRadius() {
   updateMapClearButtonVisibility();
 }
 
-async function renderMarkers(stores) {
+async function renderMarkers(stores, { preserveViewport = false } = {}) {
   const map = await ensureMap();
   const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
   const bounds = new google.maps.LatLngBounds();
@@ -1934,6 +1934,8 @@ async function renderMarkers(stores) {
     return;
   }
 
+  if (preserveViewport) return;
+
   if (!state.selectedRegion) {
     map.fitBounds(INDIA_BOUNDS, {
       top: 120,
@@ -1981,7 +1983,7 @@ function populateRegionFilter(stores) {
   el.regionFilter.value = state.selectedRegion;
 }
 
-async function applyRegionFilter() {
+async function applyRegionFilter({ preserveViewport = false } = {}) {
   state.filteredStores = state.selectedRegion
     ? state.stores.filter((store) => store.state === state.selectedRegion)
     : state.stores.slice();
@@ -1996,10 +1998,10 @@ async function applyRegionFilter() {
       : `${state.stores.length} stores across ${getRegionCounts(state.stores).size} states or territories.`,
   );
 
-  await renderMarkers(state.filteredStores);
+  await renderMarkers(state.filteredStores, { preserveViewport });
 }
 
-async function loadStores() {
+async function loadStores({ preserveViewport = false } = {}) {
   setStatus("Loading stores", "Reading cached store coordinates from Supabase.");
   showStatusCard(true);
 
@@ -2012,7 +2014,7 @@ async function loadStores() {
     state.initialViewApplied = true;
   }
   populateRegionFilter(state.stores);
-  await applyRegionFilter();
+  await applyRegionFilter({ preserveViewport });
 }
 
 async function refreshStores() {
