@@ -185,14 +185,21 @@ function setMapHelper(title, text) {
   el.mapHelperText.textContent = text;
 }
 
-function showToast(title, text = "") {
+function setAddLocationStatus(text, { loading = false } = {}) {
+  el.addLocationStatus.textContent = text;
+  el.addLocationStatus.classList.toggle("is-loading", loading);
+}
+
+function showToast(title, text = "", duration = 4200) {
   window.clearTimeout(toastTimer);
   el.mapToastTitle.textContent = title;
   el.mapToastText.textContent = text;
   el.mapToast.hidden = false;
-  toastTimer = window.setTimeout(() => {
-    el.mapToast.hidden = true;
-  }, 4200);
+  if (duration > 0) {
+    toastTimer = window.setTimeout(() => {
+      el.mapToast.hidden = true;
+    }, duration);
+  }
 }
 
 function showStatusCard(visible) {
@@ -632,17 +639,38 @@ function createLocationNode() {
 }
 
 function getCurrentPosition() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Location is not supported by this browser."));
-      return;
-    }
+  if (!navigator.geolocation) {
+    return Promise.reject(new Error("Location is not supported by this browser."));
+  }
+  if (!window.isSecureContext) {
+    return Promise.reject(new Error("Location requires a secure HTTPS connection."));
+  }
+
+  const requestPosition = (enableHighAccuracy, timeout) => new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 12000,
-      maximumAge: 30000,
+      enableHighAccuracy,
+      timeout,
+      maximumAge: 0,
     });
   });
+
+  return requestPosition(true, 20000).catch((error) => {
+    if (error?.code !== 2 && error?.code !== 3) throw error;
+    return requestPosition(false, 10000);
+  });
+}
+
+function getLocationErrorMessage(error) {
+  if (error?.code === 1) {
+    return "Location access is blocked for this site. Open your browser's site settings, set Location to Allow, then tap My Location again.";
+  }
+  if (error?.code === 2) {
+    return "Your location is unavailable right now. Check that device location services are on, then try again.";
+  }
+  if (error?.code === 3) {
+    return "Location took too long to respond. Move to a stronger signal and try again.";
+  }
+  return error?.message || "Could not get your current location.";
 }
 
 function clearProximitySelection({ keepOrigin = false } = {}) {
@@ -717,6 +745,10 @@ function clearAreaSelection() {
 async function showCurrentLocation() {
   el.locationButton.disabled = true;
   el.locationButton.classList.add("is-locating");
+  el.locationButton.setAttribute("aria-busy", "true");
+  el.locationButton.setAttribute("aria-label", "Getting your location");
+  el.locationButton.title = "Getting your location...";
+  showToast("Getting your location", "Allow location access if your browser asks.", 0);
 
   try {
     const map = await ensureMap();
@@ -765,22 +797,23 @@ async function showCurrentLocation() {
     };
     clearProximitySelection({ keepOrigin: true });
     setStatus("Current location", "Pick a radius to find stores around you.");
+    showToast(
+      "Location found",
+      `Accuracy is approximately ${Math.round(position.coords.accuracy || 0)} metres.`,
+    );
     showSheetMode(null);
     updateMapClearButtonVisibility();
   } catch (error) {
-    const locationMessages = {
-      1: "Allow location access in your browser to use this button.",
-      2: "Your current location is temporarily unavailable.",
-      3: "Location took too long. Tap the button to try again.",
-    };
-    const message = locationMessages[error?.code]
-      || error?.message
-      || "Your current location could not be found.";
+    const message = getLocationErrorMessage(error);
     setStatus("Location unavailable", message);
+    showToast("Location unavailable", message, 8000);
     showStatusCard(true);
   } finally {
     el.locationButton.disabled = false;
     el.locationButton.classList.remove("is-locating");
+    el.locationButton.setAttribute("aria-busy", "false");
+    el.locationButton.setAttribute("aria-label", "Show my current location");
+    el.locationButton.title = "My location";
   }
 }
 
@@ -1157,20 +1190,20 @@ async function updateCoordinatesFromInputs() {
   updateAddLocationActionState();
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
     || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    el.addLocationStatus.textContent = "Enter valid latitude and longitude.";
+    setAddLocationStatus("Enter valid latitude and longitude.");
     return;
   }
-  el.addLocationStatus.textContent = "Finding the address for these coordinates...";
+  setAddLocationStatus("Finding the address for these coordinates...", { loading: true });
   await fillAddressFromCoordinates({ lat: latitude, lng: longitude });
   state.coordinatesReady = true;
-  el.addLocationStatus.textContent = "Location details found.";
+  setAddLocationStatus("Location details found.");
   updateAddLocationActionState();
 }
 
 function showStoreNameRequired() {
   const nameField = el.addStoreName.closest(".sheet-field");
   nameField.classList.add("is-invalid");
-  el.addLocationStatus.textContent = "Store name is required before choosing a location.";
+  setAddLocationStatus("Store name is required before choosing a location.");
   el.addStoreName.focus();
 }
 
@@ -1184,7 +1217,7 @@ function scheduleCoordinateLookup() {
 async function createStoreAtLocation(location) {
   const name = el.addStoreName.value.trim();
   if (!name) return;
-  el.addLocationStatus.textContent = "Creating store from this location...";
+  setAddLocationStatus("Location found. Creating store from this location...", { loading: true });
   el.addLocationModeButtons.forEach((button) => {
     button.disabled = true;
   });
@@ -1211,11 +1244,12 @@ async function createStoreAtLocation(location) {
     setMapHelper("", "");
     el.addStoreForm.reset();
     updateAddLocationModeUi("coordinates");
+    setAddLocationStatus("Enter the store coordinates below.");
     updateAddLocationActionState();
     await loadStores();
     showToast("Store created", `Store #${formatStoreNumber(payload.store)} was added.`);
   } catch (error) {
-    el.addLocationStatus.textContent = error.message || "Could not create this store.";
+    setAddLocationStatus(error.message || "Could not create this store.");
     updateAddLocationActionState();
   }
 }
@@ -1229,13 +1263,13 @@ async function setAddLocationMode(mode) {
   updateAddLocationModeUi(mode);
 
   if (mode === "coordinates") {
-    el.addLocationStatus.textContent = "Enter the store coordinates below.";
+    setAddLocationStatus("Enter the store coordinates below.");
     return;
   }
 
   const map = await ensureMap();
   if (mode === "current") {
-    el.addLocationStatus.textContent = "Finding your current location...";
+    setAddLocationStatus("Getting your location... Allow location access if your browser asks.", { loading: true });
     try {
       const position = await getCurrentPosition();
       const location = {
@@ -1246,14 +1280,14 @@ async function setAddLocationMode(mode) {
       map.setZoom(16);
       await createStoreAtLocation(location);
     } catch (error) {
-      el.addLocationStatus.textContent = error.message || "Could not get your current location.";
+      setAddLocationStatus(getLocationErrorMessage(error));
     }
     return;
   }
 
   showSheetMode(null);
   setMapHelper("Drop Store Pin", "Zoom in, then click the exact store location.");
-  el.addLocationStatus.textContent = "Click the map to place the store pin.";
+  setAddLocationStatus("Click the map to place the store pin.");
   state.addPinClickListener = map.addListener("click", (event) => {
     if (!event.latLng) return;
     const location = {
@@ -1276,7 +1310,7 @@ function showAddStoreSheet({ reset = true } = {}) {
     el.addStoreForm.reset();
     state.coordinatesReady = false;
     updateAddLocationModeUi("coordinates");
-    el.addLocationStatus.textContent = "Enter the store coordinates below.";
+    setAddLocationStatus("Enter the store coordinates below.");
   }
   updateAddLocationActionState();
   showSheetMode("add");
@@ -2069,7 +2103,7 @@ async function createManualStore(event) {
     return;
   }
   if (!state.coordinatesReady) {
-    el.addLocationStatus.textContent = "Enter valid coordinates to continue.";
+    setAddLocationStatus("Enter valid coordinates to continue.");
     return;
   }
 

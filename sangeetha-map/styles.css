@@ -901,6 +901,30 @@ textarea {
   line-height: 1.35;
 }
 
+.location-mode-status.is-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--blue-deep);
+}
+
+.location-mode-status.is-loading::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border: 2px solid rgba(37, 99, 235, 0.22);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: location-status-spin 0.75s linear infinite;
+}
+
+@keyframes location-status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .store-edit-form,
 .selection-panel {
   padding-top: 18px;
@@ -1223,7 +1247,7 @@ textarea {
 
 .store-pin.is-selected .store-pin-number {
   min-width: 13px;
-  font-size: 0.52rem;
+  font-size: 0.624rem;
 }
 
 .store-pin.is-nearby {
