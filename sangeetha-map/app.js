@@ -47,6 +47,8 @@ const state = {
   deleteConfirmStore: null,
   sheetMode: "hidden",
   stores: [],
+  trafficPolylines: [],
+  trafficSnapshot: null,
 };
 
 const INDIA_BOUNDS = {
@@ -147,6 +149,12 @@ const el = {
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
   topSearchButton: document.getElementById("top-search-button"),
+  trafficButton: document.getElementById("traffic-button"),
+  trafficCard: document.getElementById("traffic-card"),
+  trafficCardClose: document.getElementById("traffic-card-close"),
+  trafficRoadList: document.getElementById("traffic-road-list"),
+  trafficCardSummary: document.getElementById("traffic-card-summary"),
+  trafficCardTitle: document.getElementById("traffic-card-title"),
   storeSearchInput: document.getElementById("store-search-input"),
   storeSearchResults: document.getElementById("store-search-results"),
   storeSheet: document.getElementById("store-sheet"),
@@ -335,6 +343,101 @@ async function fetchJson(url, options) {
     throw new Error(String(payload?.error ?? `Request failed with ${response.status}`));
   }
   return payload;
+}
+
+function durationMinutes(duration) {
+  return Math.round(Number.parseInt(String(duration || "0"), 10) / 60);
+}
+
+function clearTrafficRoute() {
+  state.trafficPolylines.forEach((polyline) => polyline.setMap(null));
+  state.trafficPolylines = [];
+}
+
+function trafficColor(speed) {
+  if (speed === "TRAFFIC_JAM") return "#ef2b2d";
+  if (speed === "SLOW") return "#ff9d00";
+  return "#2ecb70";
+}
+
+function drawTrafficCorridor(map, corridor, bounds) {
+  const path = google.maps.geometry.encoding.decodePath(corridor.encodedPolyline);
+  state.trafficPolylines.push(new google.maps.Polyline({
+    map,
+    path,
+    strokeColor: "#10233b",
+    strokeOpacity: 0.78,
+    strokeWeight: 12,
+    zIndex: 20,
+  }));
+  corridor.speedReadingIntervals.forEach((interval) => {
+    const start = interval.startPolylinePointIndex || 0;
+    const end = Math.min((interval.endPolylinePointIndex || path.length - 1) + 1, path.length);
+    const segment = path.slice(start, end);
+    if (segment.length < 2) return;
+    state.trafficPolylines.push(new google.maps.Polyline({
+      map,
+      path: segment,
+      strokeColor: trafficColor(interval.speed),
+      strokeOpacity: 1,
+      strokeWeight: 7,
+      zIndex: 21,
+    }));
+  });
+  path.forEach((point) => bounds.extend(point));
+}
+
+function renderTrafficRoadList(corridors) {
+  const ranked = [...corridors]
+    .map((corridor) => ({
+      ...corridor,
+      delayMinutes: Math.max(0, durationMinutes(corridor.duration) - durationMinutes(corridor.staticDuration)),
+    }))
+    .sort((a, b) => b.delayMinutes - a.delayMinutes);
+  el.trafficRoadList.innerHTML = ranked.slice(0, 5).map((corridor) => `
+    <li class="traffic-road-item">
+      <span>${corridor.name}</span>
+      <strong>+${corridor.delayMinutes} min</strong>
+    </li>
+  `).join("");
+}
+
+async function showBengaluruTraffic() {
+  try {
+    el.trafficButton.disabled = true;
+    el.trafficCard.hidden = false;
+    el.trafficCardTitle.textContent = "Loading fixed snapshot…";
+    el.trafficCardSummary.textContent = "";
+
+    if (!state.trafficSnapshot) {
+      state.trafficSnapshot = await fetchJson("/api/bengaluru-traffic-snapshot");
+    }
+    const corridors = state.trafficSnapshot.corridors || [];
+    if (!corridors.length) throw new Error("Bengaluru traffic snapshot is unavailable.");
+
+    const highTrafficCount = corridors.filter((corridor) => (
+      durationMinutes(corridor.duration) - durationMinutes(corridor.staticDuration) >= 12
+    )).length;
+    el.trafficCardTitle.textContent = "Bengaluru traffic snapshot";
+    el.trafficCardSummary.textContent = `${highTrafficCount} high-traffic corridors in this fixed capture`;
+    renderTrafficRoadList(corridors);
+
+    const map = await ensureMap();
+    clearTrafficRoute();
+    const bounds = new google.maps.LatLngBounds();
+    corridors.forEach((corridor) => drawTrafficCorridor(map, corridor, bounds));
+    map.fitBounds(bounds, 72);
+  } catch (error) {
+    el.trafficCard.hidden = true;
+    showToast("Traffic snapshot unavailable", error.message, 7000);
+  } finally {
+    el.trafficButton.disabled = false;
+  }
+}
+
+function hideBengaluruTraffic() {
+  el.trafficCard.hidden = true;
+  clearTrafficRoute();
 }
 
 async function loadRuntimeConfig() {
@@ -2177,6 +2280,8 @@ function bindEvents() {
     setSearchVisibility(el.mapTools.hidden);
   });
   el.locationButton.addEventListener("click", showCurrentLocation);
+  el.trafficButton.addEventListener("click", showBengaluruTraffic);
+  el.trafficCardClose.addEventListener("click", hideBengaluruTraffic);
   el.sheetClose.addEventListener("click", () => showStoreSheet(null));
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;

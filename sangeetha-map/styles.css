@@ -455,6 +455,77 @@ textarea {
   animation: location-pulse 1s ease-in-out infinite;
 }
 
+.traffic-mode {
+  color: #c72b26;
+  border-color: rgba(199, 43, 38, 0.2);
+  background: #fff7f5;
+}
+
+.traffic-card {
+  position: absolute;
+  z-index: 6;
+  right: 24px;
+  bottom: 100px;
+  width: min(330px, calc(100vw - 48px));
+  padding: 18px 42px 17px 18px;
+  border: 1px solid rgba(20, 38, 70, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow);
+}
+
+.traffic-card-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: #f0f4fa;
+  color: #365071;
+  cursor: pointer;
+}
+
+.traffic-card-kicker {
+  margin: 0;
+  color: #e24435;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.traffic-card-title { margin: 5px 0 0; font-size: 1rem; }
+.traffic-card-summary { margin: 8px 0 0; color: #253d5e; font-size: 0.86rem; font-weight: 700; }
+.traffic-card-note { margin: 10px 0 0; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+
+.traffic-road-list {
+  display: grid;
+  gap: 6px;
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.traffic-road-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  background: #f5f7fb;
+  color: #2c4262;
+  font-size: 0.73rem;
+  line-height: 1.25;
+}
+
+.traffic-road-item strong { color: #d93025; white-space: nowrap; }
+
 @keyframes location-pulse {
   50% {
     transform: scale(0.82);
@@ -469,7 +540,7 @@ textarea {
   right: 12px;
   bottom: 10px;
   display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) minmax(0, 0.9fr);
+  grid-template-columns: 62px minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 0.72fr);
   gap: 14px;
   padding: 16px;
   border-radius: 24px;
@@ -1418,7 +1489,7 @@ textarea {
     left: 8px;
     right: 8px;
     bottom: 7px;
-    grid-template-columns: 52px minmax(0, 1fr) minmax(0, 0.78fr);
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.66fr);
     gap: 8px;
     padding: 10px;
     border-radius: 22px;

@@ -7,6 +7,7 @@ const path = require("node:path");
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8000;
 const catalogData = require("../data/sangeetha-store-catalog.json");
+const trafficSnapshot = require("../data/bengaluru-traffic-weekly-snapshot.json");
 let localStores = catalogData.stores.map((store, index) => ({
   id: index + 1,
   store_number: index + 1,
@@ -100,6 +101,11 @@ const server = http.createServer((request, response) => {
       supabaseUrl: "https://plwipoqvcqrclkaytujn.supabase.co",
       supabasePublishableKey: "sb_publishable_qeNG7yC8yra-FYSO68zLBg_gSyR9iS0",
     });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/bengaluru-traffic-snapshot") {
+    sendJson(response, 200, trafficSnapshot);
     return;
   }
 

@@ -1,0 +1,1078 @@
+{
+  "city": "Bengaluru",
+  "generatedAt": "2026-08-29T14:55:11.830Z",
+  "refreshPolicy": "Manual only. This snapshot does not auto-update.",
+  "source": "Google Routes API traffic-aware routes",
+  "corridors": [
+    {
+      "id": "airport-mg-road",
+      "name": "Kempegowda Airport → MG Road",
+      "origin": [
+        13.1991,
+        77.7066
+      ],
+      "destination": [
+        12.9756,
+        77.6066
+      ],
+      "duration": "3611s",
+      "staticDuration": "3048s",
+      "distanceMeters": 34735,
+      "encodedPolyline": "g~poAy`hyMq@@ApJCbGBnLDhDFLALdCCRGJWB_DFOPKn@Aj@@PHLP@L?rFA^Kp@GHQLAdIBdHO`aAGzF?DBnF?nD?~CJlBThDHfCCzKA~AGn@GjJAnIEdKGfQEfDFv@@tJCbBIjAYzAg@lBOJq@lAu@dAiDrDOT]r@Qt@En@@l@BZNp@Tl@x@~AxHtMzBbEdCtEjApB\\t@|H`NlAhBz@dArGjLpAnB~AxCd@`AXd@v@~@|A~AxBbBxYdRtE|CjBjAZVtKzGxE~ClBpAtEvCbNbJxMdJzBhApIpCvCbAhI|CvWlJvAl@zAz@bG`E~EnDfF`EdIfFfGlErHlFdGxDnIbFnBdAzCrAp\\jNhA`@bAThBVjLr@pCNbEHdDCrHKlIC`FGrC?hAJt@JtAZpDhAfHdClDpAx@^hC~@dBj@pLjE~F~Bd\\tLvObGbKfE`GnCnTbLbNhHvM~G|FvC`G|CxDjB|B|@~@\\zD`A~HvAxNjClCh@dDz@jRrFH@lCd@pEh@`AJ|JtAf@LrCl@dBh@tGvBzIxCrOpExAZdCb@~CXpNh@~Pt@xCL~D@xC?pDE|L[tRq@jCOzFMbIGlP]pFCdUFvECjDKpEKz@?pCXfC\\nDt@xC\\H@hCh@fA\\lHpCHBbA`@`AXpAT|E`@`BTlD~@pCdAtAb@pEz@jDj@fCXnGd@|DP`FBv@NnGrBfB`@x@Hz@DpAR|@TrAf@jFvBxH~BzDjAlC`A|EfAxDt@rDf@jF~@zDp@r@D^@pBVpCh@xCj@J@^DL?bEHtECtEGlACtBIjE?tPN~EJjEAjF?vMWvKWz@?`GBnLAjAChJSJAjD[xC_@vB]`H_AjBQ|DS|@ObE]lHk@fCSrBYh@Kj@_@nGcIt@y@tBwCXWVS|@_Ab@g@zC{BfFiEnBmBp@aAN_@BMgFiAhB_Hj@kCVgAR{@\\cAv@{C^kBfCiK~ByJXgAxA\\|@PbAVfARfBcIvIlA~Dd@\\{B^gCp@yElB_M",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 28,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 28,
+          "endPolylinePointIndex": 30,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 30,
+          "endPolylinePointIndex": 146,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 146,
+          "endPolylinePointIndex": 148,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 148,
+          "endPolylinePointIndex": 151,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 151,
+          "endPolylinePointIndex": 182,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 182,
+          "endPolylinePointIndex": 186,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 186,
+          "endPolylinePointIndex": 216,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 216,
+          "endPolylinePointIndex": 223,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 223,
+          "endPolylinePointIndex": 225,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 225,
+          "endPolylinePointIndex": 228,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 228,
+          "endPolylinePointIndex": 238,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 238,
+          "endPolylinePointIndex": 241,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 241,
+          "endPolylinePointIndex": 243,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 243,
+          "endPolylinePointIndex": 288,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 288,
+          "endPolylinePointIndex": 291,
+          "speed": "TRAFFIC_JAM"
+        }
+      ]
+    },
+    {
+      "id": "hebbal-silk-board",
+      "name": "Hebbal → Silk Board",
+      "origin": [
+        13.0358,
+        77.597
+      ],
+      "destination": [
+        12.9177,
+        77.6229
+      ],
+      "duration": "4112s",
+      "staticDuration": "3140s",
+      "distanceMeters": 18923,
+      "encodedPolyline": "aaqnAmtrxMa@hAAfAQjAUtC?Ve@zB{AfHWbAWn@S|BM~Bo@nH?J~CFpAPd@LpAd@xBr@hA\\n@Nn@JxBNERpAR|@TrAf@jFvBxH~BzDjAlC`A|EfAxDt@rDf@~Ez@fEt@r@D^@pBVpCh@xCj@@?h@F@?nEHtECjEGvACtBIjE?tPN~EJjEAjF?vMWvKWr@?hGBnLA`AArJUB?rD]xC_@vB]`H_AjBQ|DS|@ObE]lHk@fCSrBYh@Kj@_@nGcIt@y@tBwCXWVS|@_Ab@g@nAtAnCpCXR`@RPPTDhInCpExBhBbAhCbB~HdEP?^JtAn@ZDZEHAj@w@jAmBr@gAjCaEr@kA?EAMHONIR@LJDRAHh@Xn@R~@Rn@RlATbAJdCKzK{@fJk@~BUrBMb@Gl@[B{CCYP_@TQZOr@]lC}@xDcB\\Ah@HB?jC`@fFj@@AbAu@rA@f@Fb@Nx@z@~CjDnBvAdHnEdAh@pBj@dJbBvARdAJfGx@d@SlFwGRe@~EeSQOAUFSPIL@tAuE\\i@`@c@\\g@DGvA}ANMzCqAh@Oz@_@FELIrEeBl@Un@[~AqAh@k@`BsBDIp@sAb@s@Vk@RW|@s@`AUvGy@hHg@jDKpCQl@K^EhAa@pCuAtAeAb@a@BW~@aBTm@V{@TeB\\oEDu@j@FdAVj@JpBRVFNJfEPfFt@jATpD`@lDPdELVD|MLfFDvITbDDHBnS\\nIPdDBtACjDBb@?FaKDcDAm@R_M@mE?y@?uD?}@PyHCoC?}ABu@DeNBwDDkBb@uHDuAGmGE_C@_AEwASuAKw@I@g@C_@o@Y[aBsAy@g@SIk@GmAA[M[SWa@ES?[F[R_@ZYvBeAPAdAe@",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 34,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 34,
+          "endPolylinePointIndex": 41,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 41,
+          "endPolylinePointIndex": 43,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 43,
+          "endPolylinePointIndex": 46,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 46,
+          "endPolylinePointIndex": 56,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 56,
+          "endPolylinePointIndex": 59,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 59,
+          "endPolylinePointIndex": 61,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 61,
+          "endPolylinePointIndex": 100,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 100,
+          "endPolylinePointIndex": 104,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 104,
+          "endPolylinePointIndex": 129,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 129,
+          "endPolylinePointIndex": 134,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 134,
+          "endPolylinePointIndex": 135,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 135,
+          "endPolylinePointIndex": 138,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 138,
+          "endPolylinePointIndex": 166,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 166,
+          "endPolylinePointIndex": 172,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 172,
+          "endPolylinePointIndex": 174,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 174,
+          "endPolylinePointIndex": 180,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 180,
+          "endPolylinePointIndex": 270,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "whitefield-mg-road",
+      "name": "Whitefield → MG Road",
+      "origin": [
+        12.9698,
+        77.75
+      ],
+      "destination": [
+        12.9756,
+        77.6066
+      ],
+      "duration": "4346s",
+      "staticDuration": "3232s",
+      "distanceMeters": 18719,
+      "encodedPolyline": "gddnAqppyMxCX~ANbC^rATzE`AlHxA~Dz@|G~AxBb@\\Dp@DNCXB~GpCjCnApCpAlBp@n@Rd@HdAJx@XJPANKNOB\\pA@^E|@Y~AKr@IbD@tACXCjK?nDCp@GbLD`BzCh]JrCJjCPhF?BJvBDzBBtFNlXNdY?~JUnDWnI?r@?p@@VIdAO`EEnBCdAW~GK`BIrA[bMQ~FIrC@b@s@fTUdHDzBDfATnBl@`Hf@`FZjCTrC?@x@|HPpADZ~@tJh@|DTnDZnD\\~FrAxZFxCIvAQz@u@dCwDbKuA|CkExK{A`F_@~AMhAMbDOjFM|GIfACrBUbFUjCm@xFI`Ay@dGg@zESdDAbAJ~AZ|C?`BInDSnEA\\OtGK~DEjCEpBSjLQnFWvEEh@e@vHIbBOjCKbCMpBSlD_@pDU|F?RWz@OdF_@`HIz@GnAi@hHg@nDUtBUdD?nA@`@f@vCVhATz@B^A`@wBpJq@~C[`Ce@`Cw@`Be@hAuArC_@f@mAl@iBx@mI~CYTSb@cCnH]lAOz@Aj@Cd@@jALv@lArDMJs@b@qEjA}BZaDP{AJu@BuH`@wAB{@DCnBOhBgA`Iw@~EoAnJ_AvFaB~KETEb@{@vFw@rES`Bw@bF[pBg@rC]|BaB|KENGr@?B?VSE@[XkBb@wCp@yEjB{L@C",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 1,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 1,
+          "endPolylinePointIndex": 5,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 5,
+          "endPolylinePointIndex": 40,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 40,
+          "endPolylinePointIndex": 42,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 42,
+          "endPolylinePointIndex": 52,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 52,
+          "endPolylinePointIndex": 57,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 57,
+          "endPolylinePointIndex": 74,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 74,
+          "endPolylinePointIndex": 77,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 77,
+          "endPolylinePointIndex": 113,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 113,
+          "endPolylinePointIndex": 116,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 116,
+          "endPolylinePointIndex": 163,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 163,
+          "endPolylinePointIndex": 168,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 168,
+          "endPolylinePointIndex": 174,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 174,
+          "endPolylinePointIndex": 176,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 176,
+          "endPolylinePointIndex": 184,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 184,
+          "endPolylinePointIndex": 190,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 190,
+          "endPolylinePointIndex": 193,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 193,
+          "endPolylinePointIndex": 196,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 196,
+          "endPolylinePointIndex": 201,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 201,
+          "endPolylinePointIndex": 204,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 204,
+          "endPolylinePointIndex": 205,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "kr-puram-electronic-city",
+      "name": "KR Puram → Electronic City",
+      "origin": [
+        13.0074,
+        77.6956
+      ],
+      "destination": [
+        12.8456,
+        77.6603
+      ],
+      "duration": "3598s",
+      "staticDuration": "3345s",
+      "distanceMeters": 29946,
+      "encodedPolyline": "gnknAi|eyMOjA_AKIz@SjAK@oAKK|DBfA\\dDrAtKd@zBhAhD~BxFn@dB~FjMRBT^dA|BxDxHlEkBnCmAX@|Bd@NFFJDhFBbCFDx@?J_EDiK@m@Z?CzBCdEMdGr@A~RgKvBmAFN|AeAnD}Bv@i@zBwArGqEhH}EdAm@`EoCrFmClDcBxA{@~C}AxAq@tTwLfT}K`QcJzDgBnBgAfNgHtVeMlBiAr@YjA]rAQlAG`C@jGTvGd@@?fNnAxCX`FRrF@hDRzAPtEdAnK`BxCd@vATjFh@`CXPB~D\\XHhANhEv@hSzEhDx@`Bf@d@NlS~JlAx@lA~@bDbDxJ~KdClCjGdHdFbGx@|@bBbBbCxCpArAjC~ClAjBZl@bGbP\\bAx@xBTp@jAtCtB~FhI`Tv@zBdArC|EvN~@fCTnAjBxE~EfM`DxILv@@z@Gz@mCrMaA`Ho@hDmBrHc@xA}BnJm@jEqAjLs@lH_@rDAhANlEB`CBf@Lz@\\rAVx@f@fAr@jAHLxDfExAhB@@f@f@`Ax@lIpG|EbDxAjAlDdDd@b@JLb@b@~@jAr@jAj@vAj@zBNfADfAAv@U~CGf@KnBYfDGfAHz@?@a@bKMzAAL?RYbFOdG@fBCbCOnAoCtMKpACpANnDJhAlA`@`A?|@UnCgA|Ao@rD}AnHuDdAm@`As@`@Qz@WVKtC{ADJpDoBP?`OmHbMsGxt@c`@VUfEyBxGkDh`@qSnTcLdR{JfE{BpTeLnBoA|AgAlDuCjGqFnCaC~D}C|MwJlNiKvFcEfJuGzQeNdKuHtEcDrC}BbE{CtEaDzJqHlKyHzJoHhFuD`EyCFBj@Gf@Bd@P^`@|BnFn@lBjAhCb@jALr@ZlCHhEEPAXBlAGvGCrGChEHz@n@dCYHKPm@@",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 69,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 69,
+          "endPolylinePointIndex": 70,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 70,
+          "endPolylinePointIndex": 78,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 78,
+          "endPolylinePointIndex": 81,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 81,
+          "endPolylinePointIndex": 142,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 142,
+          "endPolylinePointIndex": 146,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 146,
+          "endPolylinePointIndex": 169,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 169,
+          "endPolylinePointIndex": 171,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 171,
+          "endPolylinePointIndex": 254,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "yeshwantpur-marathahalli",
+      "name": "Yeshwanthpur → Marathahalli",
+      "origin": [
+        13.0238,
+        77.5529
+      ],
+      "destination": [
+        12.9592,
+        77.6974
+      ],
+      "duration": "4562s",
+      "staticDuration": "3549s",
+      "distanceMeters": 21012,
+      "encodedPolyline": "iunnAg`jxMSTdA@fB?^Cp@Oj@Uj@[JSdAi@L?ZK|@g@pC}FdAkBFILCCIBKHAB@t@yB`B{D@M\\y@\\WRICQ@a@Ts@bAyBb@k@TQxEkJlB_EbB_EpDmHLOdC_F@KH[D]?g@SgGKw@UkF?CEm@i@gROoBAoBS}I?iMFgL?eAVqLT}JP@d@e@rHJhB@fELVFBBpDAjF?vMWvKWn@?lGBnLA|@AvJUvD]xC_@vB]`H_AjBQ|DS|@ObE]lHk@fCSrBYh@Kj@_@nGcIt@y@tBwCXWVS|@_Ab@g@zC{BfFiEnBmBp@aAN_@BMgFiAhB_Hj@kCVgAR{@\\cAv@{C^kBfCiK|BuJ@Cr@kCpAqFdAeExG|A|AgH@Ed@gBtAqG|@}Dz@sDDUpHu[jAsE~FnAz@NnA_JbAaH`AmHDeA@oAAY|EG~F]~FW~BUpD{@jAa@^[DK@O?Sy@gCGi@A_BFmADa@TgAr@wBvBiGLO~Ao@|Ao@fG}BbAe@X]nDqHXw@P_A`@kDnCkMRsAAa@o@qCa@cCEoABq@RcC\\sCVqB`@kEXoED{Ab@_ILqDVyDDsAb@mEVuDl@iKHy@ZaHXaEBw@PsCJoE@iAV{I?C@oBDuA^aPZwHBkCQsBQuAGaA?k@RuDTgClAeKPwBt@sGL{BX_IPmId@eKNqAPs@dBwF|AwDhB{Ex@kB~E{Mx@mCHs@B_@IeD[kIg@kIo@{Ms@oJ]eCGm@o@{FWqCs@qHQuAUcDgAmJa@aFe@EGb@]zAsCOu@Ci@IcAS",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 2,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 2,
+          "endPolylinePointIndex": 10,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 10,
+          "endPolylinePointIndex": 17,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 17,
+          "endPolylinePointIndex": 26,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 26,
+          "endPolylinePointIndex": 46,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 46,
+          "endPolylinePointIndex": 49,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 49,
+          "endPolylinePointIndex": 53,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 53,
+          "endPolylinePointIndex": 56,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 56,
+          "endPolylinePointIndex": 68,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 68,
+          "endPolylinePointIndex": 71,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 71,
+          "endPolylinePointIndex": 72,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 72,
+          "endPolylinePointIndex": 108,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 108,
+          "endPolylinePointIndex": 111,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 111,
+          "endPolylinePointIndex": 114,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 114,
+          "endPolylinePointIndex": 119,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 119,
+          "endPolylinePointIndex": 184,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 184,
+          "endPolylinePointIndex": 186,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 186,
+          "endPolylinePointIndex": 222,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 222,
+          "endPolylinePointIndex": 224,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 224,
+          "endPolylinePointIndex": 236,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "rajajinagar-koramangala",
+      "name": "Rajajinagar → Koramangala",
+      "origin": [
+        12.9916,
+        77.5533
+      ],
+      "destination": [
+        12.9352,
+        77.6245
+      ],
+      "duration": "3173s",
+      "staticDuration": "2379s",
+      "distanceMeters": 12848,
+      "encodedPolyline": "wlhnAccjxMC~@fFHf@ABGAy@Ew@F[HGj@ALsE?wABc@@_CvDHtEB`DHXA^[~@_@^KxAQhAAX@|@LJ_@fA}AhBaBBOd@q@Xe@XaAFk@JsFHw@Ps@R[b@c@r@kANa@XaBFy@FyDd@eH\\aDHMF}@^gDCc@C[kAeF{@eD@[Ck@@UR}@^y@X_@l@g@P]d@WzB}@vAKl@Sl@e@^WBKIc@WqCMcBc@uCOiAGeAMgAHqGNcGD{EDmBNyAFkAD_CBg@Nw@d@aBL]pA_C`G{J|AyCj@w@lAmBp@gAjCaEr@kA?EAMHONIR@LJDRAHh@Xn@R~@Rn@RlATbAJdCKzK{@fJk@~BUrBMb@Gl@[B{CCYP_@TQZOr@]lC}@xDcB\\Af@HB?lC`@fFj@dAw@Xi@Z_CF_ADoBZcCA]R_BTyCD}AEaBKs@e@eAXa@Hi@h@gHJiANiAZ}Ab@oC@EVmAl@iBlAgChBcDp@mAN[PSb@cBh@eCb@}AXw@`@y@NYjAyAf@cAXiAd@aBLs@BKhJlA^DhCV`BJrDTdDRdBDxCH~@KnA]|A]pC_An@OZMxBa@|IoBtDs@rBYt@S`HmAbFcAbAUzBq@jBy@`@WjEkBzEkB`Ag@lEkBdLkFdFyBeDuIqD}IWaAKaC@i@OaBM_@QWyA}Aw@]uA[Xs@f@gAh@w@~AgDrAyBxBqEbDcG|@gBg@YeA{@a@g@NSFH",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 89,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 89,
+          "endPolylinePointIndex": 93,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 93,
+          "endPolylinePointIndex": 118,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 118,
+          "endPolylinePointIndex": 123,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 123,
+          "endPolylinePointIndex": 124,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 124,
+          "endPolylinePointIndex": 126,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 126,
+          "endPolylinePointIndex": 142,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 142,
+          "endPolylinePointIndex": 147,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 147,
+          "endPolylinePointIndex": 159,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 159,
+          "endPolylinePointIndex": 165,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 165,
+          "endPolylinePointIndex": 167,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 167,
+          "endPolylinePointIndex": 170,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 170,
+          "endPolylinePointIndex": 173,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 173,
+          "endPolylinePointIndex": 221,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "hsr-manyata",
+      "name": "HSR Layout → Manyata Tech Park",
+      "origin": [
+        12.9116,
+        77.6389
+      ],
+      "destination": [
+        13.0475,
+        77.62
+      ],
+      "duration": "5096s",
+      "staticDuration": "3857s",
+      "distanceMeters": 22713,
+      "encodedPolyline": "qwxmAczzxM?|CWAUFwAAw@?_LC_GGA|@OtBWdCInAStCIzAAf@_@bKMxAAN?RYbFOdG@fBU@IxBa@~BaAxE_ArEGx@A|A@hAXbDJz@LrAHh@Rv@yBhA]NmBhAwD`CM@EE}EhCkBx@e@Ri@ViGfDaErB_HlD_BbAYTwAj@{BpAeDlBiPtIyDjBY?sBfAEBaFxBgEfBGByDdBgBr@gGrC}Ar@kChAwAn@OP}DzA{ErBy@^{B|@kCv@sH~AgM~B}R~DqCt@{Ad@}DbAk@H}GUkCOeGc@qAQGAsBUeDg@}@IkBSIAaCOyEa@mDe@gGg@iAEsG?I?kBCkAD}DKcBB}Cj@kARkEjAqNxFIBw@PcDbAc@RSR_B|CITGn@IvE?BAlAMTOLc@FwJy@}@CcAIGFk@r@_BfBIhHHRmAZsE`BgDfAIDaHbCgAp@aAl@Wj@On@Kr@k@tB_AhEO`@Kh@_@tAoAdGKZSX[L[Fo@dCEJkFvOg@jAg@|@wBw@s@MoBu@c@Ce@BoAbBaAvAcCxCkClD]^[Ts@RmD^mF^eAFwEf@_@Hy@`@s@Ha@@o@IKIYCmBLuIhA}BX{Df@wCVaJXwGBQ?qDFkDIqF?sBFwKXaINu@@kFBuPS_QIuAFqGHsB@qD@_CEcAEi@KeF_AmCa@aCUcMwB{Es@wCi@kCq@w@UiBo@yAc@EPcA]uA]{Bu@{FoBmBw@kC}@y@OyEe@iEoAqA_@cAYy@Ik@AmCMoBCa@?iAGcBSYAMKgAOOCgCUuEw@iAS}Bg@kC}@mBq@c@AiG[QA[SQYG]@_@La@^[~ImE~Am@H@bE_CDQN_BLSDiAF{HEmAEWg@yAi@}@}D{FWc@MYS{@Io@CmC?o@H{KIeO?W?_F@iAJcBh@{EzAiLtCoRTu@\\u@d@gAbBeHZ}BVsBWECUAgFCoAsG?aBIkHq@uJqAwAOsBQKDOCEKBMJGLB",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 14,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 14,
+          "endPolylinePointIndex": 16,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 16,
+          "endPolylinePointIndex": 57,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 57,
+          "endPolylinePointIndex": 59,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 59,
+          "endPolylinePointIndex": 84,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 84,
+          "endPolylinePointIndex": 89,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 89,
+          "endPolylinePointIndex": 96,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 96,
+          "endPolylinePointIndex": 101,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 101,
+          "endPolylinePointIndex": 105,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 105,
+          "endPolylinePointIndex": 113,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 113,
+          "endPolylinePointIndex": 122,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 122,
+          "endPolylinePointIndex": 130,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 130,
+          "endPolylinePointIndex": 132,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 132,
+          "endPolylinePointIndex": 148,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 148,
+          "endPolylinePointIndex": 150,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 150,
+          "endPolylinePointIndex": 173,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 173,
+          "endPolylinePointIndex": 182,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 182,
+          "endPolylinePointIndex": 186,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 186,
+          "endPolylinePointIndex": 188,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 188,
+          "endPolylinePointIndex": 194,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 194,
+          "endPolylinePointIndex": 199,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 199,
+          "endPolylinePointIndex": 219,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 219,
+          "endPolylinePointIndex": 231,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 231,
+          "endPolylinePointIndex": 234,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 234,
+          "endPolylinePointIndex": 267,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 267,
+          "endPolylinePointIndex": 270,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 270,
+          "endPolylinePointIndex": 298,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "jayanagar-whitefield",
+      "name": "Jayanagar → Whitefield",
+      "origin": [
+        12.9299,
+        77.583
+      ],
+      "destination": [
+        12.9698,
+        77.75
+      ],
+      "duration": "4307s",
+      "staticDuration": "3276s",
+      "distanceMeters": 24100,
+      "encodedPolyline": "uj|mA}|oxMhCjChBtBTCzOOrA?|EElD@LgKDcB@kBvRDvKDH@`E@DiEDiDImAMaADW@wE?sCHcANuAHgKBaFNmUFeMDeKH{IAoBLcNJaRF_DCwCDkEF{RLwB`@aHKkOE_AMu@a@cAaA{Ao@o@m@i@mAw@_@Oo@EsACQAE@[SWa@ES?[F[R_@ZYvBeAn@g@Vc@LWLu@?q@UqCI{DBqAJaAbAcFAWn@{CXkBJeBRkJPgCHeCDiC^K\\{JDoB`@iGZqDBcAGaAIq@o@gCc@gA]k@qCqDuDuDg@c@yHmFoFaEoC_CkHkIg@u@eAqBY{@[wAIm@MeBSaH?q@NoBj@sFpAoLrAeJpDyM`B{Gp@kDjA}HVaB`AmE\\eC@y@WuAiAkEqJsWeAqCkBsFwAaEm@kB_@}@k@qAoDaKm@wA_CaGkC}GuEmMeByEcBsEs@wBq@wAsAmByFmG]m@a@i@mD{DkHgIuAaBm@k@gAsAuKgLkFuFoAkAcAy@cCqAyDkBqKmFaBi@qBi@yAc@mMaDoE}@@RgAWgC_@mEa@sAM{BScCOYGUGwAQ}B]gAUwB[eB]_@GiBYsCi@eAYcBWw@IFwCBiAV_F|@}YNgG?i@P{APcFXsJD}B?w@^{LLkCAc@DqA@UB}AIiQSwd@EsEMmFKkCI}CAo@IiBS}DGi@YkDuB}UCaBJ}P?uGA}BDeAD_Fp@{EAa@Mi@Qk@i@Y_A{@gCw@}B_A}CyA}DgBqCgAUEUBs@Cs@KkHaBcKyBeASw@S_ASiB_@yAYsF{@A?_Gk@LoFD}FG~HI|CJ@",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 13,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 13,
+          "endPolylinePointIndex": 15,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 15,
+          "endPolylinePointIndex": 120,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 120,
+          "endPolylinePointIndex": 123,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 123,
+          "endPolylinePointIndex": 158,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 158,
+          "endPolylinePointIndex": 162,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 162,
+          "endPolylinePointIndex": 168,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 168,
+          "endPolylinePointIndex": 174,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 174,
+          "endPolylinePointIndex": 182,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 182,
+          "endPolylinePointIndex": 185,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 185,
+          "endPolylinePointIndex": 189,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 189,
+          "endPolylinePointIndex": 197,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 197,
+          "endPolylinePointIndex": 201,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 201,
+          "endPolylinePointIndex": 228,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 228,
+          "endPolylinePointIndex": 232,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 232,
+          "endPolylinePointIndex": 239,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "kengeri-indiranagar",
+      "name": "Kengeri → Indiranagar",
+      "origin": [
+        12.9134,
+        77.4865
+      ],
+      "destination": [
+        12.9784,
+        77.6408
+      ],
+      "duration": "4797s",
+      "staticDuration": "3555s",
+      "distanceMeters": 20463,
+      "encodedPolyline": "aeymAab}wMG^A\\rAtAj@r@`Az@QLe@[i@k@QWCCyBcCkDyCqAuAgA}AkB_DmAwBs@_AqBeBq@i@k@_@{BeAeBu@u@c@y@o@y@cAoAiBq@o@wAaAuAy@m@e@e@e@s@kAeCsFe@mA{AyE_@}@a@s@i@q@eEqEeCgCcA_AoA_Bu@cAmD{Fw@iAw@_AwAqAs@e@oAoAY_@Wk@Me@YaBg@gBYm@_@g@k@g@s@a@oCsAg@c@oAgB}CoFa@m@kFyF}B_D}@aBWc@e@uAq@iCSy@c@oB]kB]oAMo@e@uE]}CSmD?iAJsDEk@Mu@yByIEIQ[]_@kCwBq@{@MS_CcEw@_AmFoEiBmAwGuDYU]QaAw@{@{@aEcDwAuA{@eAaBiCaAgBm@}A_@gAk@sAcB}Eo@mCu@iDMc@i@iCc@sA}AmDaCaEe@o@qDyD]Ue@MYCY?gANs@RA?gAb@_ANu@_@aBu@_@WQYMg@MsAZaEDm@L}AP{ABcAIeBEYO[QSWQCGa@i@]g@Yu@c@{Ba@kA[m@[a@W[WYy@_AyAmBq@iAaBeDUm@g@wAWmB_@uDUsB}@cJ[kBmD}Og@mB?Ca@cAk@w@q@k@eCsAAAm@k@qA}BaBqCk@yAU{@cBeMIeBGqEGkA[mBq@{Cs@_Cy@mD{AcIi@gBo@iBe@aBsAmFWqAMuDQcDOaFOgEO}BOuACw@JgATy@l@eBj@gCPoAx@_DPoA?gACeBFcC\\_HAc@M][_@c@W[OAEPiFFWJ_BFs@A}@I_BOc@g@g@{EgE}@a@gAMgBwAg@Yu@YOFgBDUAWOKKB{CCYg@sB]{@g@y@cE{EsL_OoAuAyAwA{AcAsBeBmCgDmDsEaAyAwAwBOYmC}DACU_@IYHeEFcIXkBb@wCp@yEvBiNt@_FD[f@wC?CPy@tAaKBQ|AeKrBwNfAyH`AmHDeA@oAYcGOuA_@kBs@cCWm@aAiBgA{B?AqEmIaAsAUUWQcAu@qFkDo@g@We@y@oBUc@k@k@m@i@?UEoAAa@b@kK\\_JKsIAaBGyGL@hCRAoBEaCGqECuBKmGcA@cADC@",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 9,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 9,
+          "endPolylinePointIndex": 12,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 12,
+          "endPolylinePointIndex": 66,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 66,
+          "endPolylinePointIndex": 72,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 72,
+          "endPolylinePointIndex": 83,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 83,
+          "endPolylinePointIndex": 88,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 88,
+          "endPolylinePointIndex": 107,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 107,
+          "endPolylinePointIndex": 121,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 121,
+          "endPolylinePointIndex": 132,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 132,
+          "endPolylinePointIndex": 137,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 137,
+          "endPolylinePointIndex": 141,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 141,
+          "endPolylinePointIndex": 148,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 148,
+          "endPolylinePointIndex": 150,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 150,
+          "endPolylinePointIndex": 155,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 155,
+          "endPolylinePointIndex": 163,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 163,
+          "endPolylinePointIndex": 168,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 168,
+          "endPolylinePointIndex": 245,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 245,
+          "endPolylinePointIndex": 248,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 248,
+          "endPolylinePointIndex": 254,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 254,
+          "endPolylinePointIndex": 258,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 258,
+          "endPolylinePointIndex": 260,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 260,
+          "endPolylinePointIndex": 263,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 263,
+          "endPolylinePointIndex": 277,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 277,
+          "endPolylinePointIndex": 282,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 282,
+          "endPolylinePointIndex": 296,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 296,
+          "endPolylinePointIndex": 299,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 299,
+          "endPolylinePointIndex": 303,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 303,
+          "endPolylinePointIndex": 307,
+          "speed": "SLOW"
+        },
+        {
+          "startPolylinePointIndex": 307,
+          "endPolylinePointIndex": 308,
+          "speed": "NORMAL"
+        }
+      ]
+    },
+    {
+      "id": "bannerghatta-mg-road",
+      "name": "Bannerghatta Road → MG Road",
+      "origin": [
+        12.9066,
+        77.601
+      ],
+      "destination": [
+        12.9756,
+        77.6066
+      ],
+      "duration": "2817s",
+      "staticDuration": "2160s",
+      "distanceMeters": 10735,
+      "encodedPolyline": "cywmAcmsxMrBaB@OiFlDgAd@{@RaBRsKn@mA@q@B_AN{CLgEHaGGYCeJAuGIk@Aa@HiDKsEK_CI{Uc@cGSyIOiACuGCwHKsBCmDKi@?iBOaEs@oGcAkBIa@@[AsC_@k@P[\\M|BMfA_@`BOf@i@dAc@l@UH]d@{AdAcB`AyAp@g@PcAHyCVeGTkF`@}Db@_@Hy@Jc@Lk@^c@f@sAzBi@dAC@eC|CiB|Am@XyCdAgAb@o@`@g@Te@NY@a@NwB`AyA|Ac@n@{@bAg@pAy@zCFLATMPQBQEKOAMsF}AaCk@{EwA{IcCgEmAeEiA_Cq@YOm@SGBmEkAgHqBg@K[@EUk@mAKWsAaB}A_BiAq@sAq@mBm@?HGlAQp@a@n@[XaCxAwB~@u@d@w@n@y@x@WZU\\[`AYdBYfCK`B?v@PrANhARpCF|BAl@ILQ@m@Ug@y@cE{EsL_OoAuAyAwA{AcAsBeBmCgDmDsEmAkBkAeBOYoCaEIMKQIYHeEFcI^aC\\aCp@yElB_M",
+      "speedReadingIntervals": [
+        {
+          "startPolylinePointIndex": 0,
+          "endPolylinePointIndex": 52,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 52,
+          "endPolylinePointIndex": 64,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 64,
+          "endPolylinePointIndex": 103,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 103,
+          "endPolylinePointIndex": 110,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 110,
+          "endPolylinePointIndex": 144,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 144,
+          "endPolylinePointIndex": 148,
+          "speed": "TRAFFIC_JAM"
+        },
+        {
+          "startPolylinePointIndex": 148,
+          "endPolylinePointIndex": 153,
+          "speed": "NORMAL"
+        },
+        {
+          "startPolylinePointIndex": 153,
+          "endPolylinePointIndex": 156,
+          "speed": "TRAFFIC_JAM"
+        }
+      ]
+    }
+  ]
+}
