@@ -486,29 +486,67 @@ function getCommercialHeatColor(intensity) {
   return blendDensityColor(colors[index], colors[index + 1], scaled - index);
 }
 
-function createCommercialDensityOverlay(cells, bounds) {
-  const width = 1200;
-  const height = 900;
-  const weights = cells.map((cell) => cell.weight).sort((a, b) => a - b);
-  const floor = weights[Math.floor(weights.length * 0.36)] || 0;
-  const peak = weights[weights.length - 1] || 1;
-  const circles = cells.map((cell, index) => {
-    const intensity = Math.max(0, Math.min(1, (cell.weight - floor) / Math.max(1, peak - floor)));
-    if (intensity < 0.035) return "";
-    const x = ((cell.lng - bounds.west) / (bounds.east - bounds.west)) * width;
-    const y = ((bounds.north - cell.lat) / (bounds.north - bounds.south)) * height;
-    const radius = 68 + (intensity * 54);
-    const color = getCommercialHeatColor(Math.pow(intensity, 0.9));
-    return `<radialGradient id="g${index}"><stop offset="0" stop-color="${color}" stop-opacity="${0.16 + (intensity * 0.28)}"/><stop offset="48%" stop-color="${color}" stop-opacity="${0.07 + (intensity * 0.12)}"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></radialGradient><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${radius.toFixed(1)}" fill="url(#g${index})"/>`;
-  }).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">${circles}</svg>`;
-  const source = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  return new google.maps.GroundOverlay(source, {
-    north: bounds.north,
-    south: bounds.south,
-    east: bounds.east,
-    west: bounds.west,
-  }, { clickable: false, opacity: 0.88 });
+function asRgba(hex, alpha) {
+  const [red, green, blue] = hex.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function createCommercialDensityOverlay(cells) {
+  class CommercialDensityOverlay extends google.maps.OverlayView {
+    constructor() {
+      super();
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.position = "absolute";
+      this.canvas.style.top = "0";
+      this.canvas.style.left = "0";
+      this.canvas.style.pointerEvents = "none";
+    }
+
+    onAdd() {
+      this.getPanes().overlayLayer.appendChild(this.canvas);
+    }
+
+    onRemove() {
+      this.canvas.remove();
+    }
+
+    draw() {
+      const map = this.getMap();
+      const projection = this.getProjection();
+      const mapDiv = map?.getDiv();
+      if (!map || !projection || !mapDiv) return;
+      const width = mapDiv.clientWidth;
+      const height = mapDiv.clientHeight;
+      if (!width || !height) return;
+      this.canvas.width = width;
+      this.canvas.height = height;
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+      const context = this.canvas.getContext("2d");
+      context.clearRect(0, 0, width, height);
+      context.globalCompositeOperation = "source-over";
+
+      const weights = cells.map((cell) => cell.weight).sort((a, b) => a - b);
+      const floor = weights[Math.floor(weights.length * 0.42)] || 0;
+      const peak = weights[weights.length - 1] || 1;
+      const radius = Math.max(46, Math.min(82, 22 + (map.getZoom() * 3.2)));
+      [...cells].sort((a, b) => a.weight - b.weight).forEach((cell) => {
+        const intensity = Math.max(0, Math.min(1, (cell.weight - floor) / Math.max(1, peak - floor)));
+        if (intensity < 0.04) return;
+        const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(cell.lat, cell.lng));
+        if (!position || position.x < -radius || position.x > width + radius || position.y < -radius || position.y > height + radius) return;
+        const color = getCommercialHeatColor(Math.pow(intensity, 0.86));
+        const gradient = context.createRadialGradient(position.x, position.y, 0, position.x, position.y, radius);
+        gradient.addColorStop(0, asRgba(color, 0.045 + (intensity * 0.12)));
+        gradient.addColorStop(0.32, asRgba(color, 0.03 + (intensity * 0.08)));
+        gradient.addColorStop(0.68, asRgba(color, 0.012 + (intensity * 0.025)));
+        gradient.addColorStop(1, asRgba(color, 0));
+        context.fillStyle = gradient;
+        context.fillRect(position.x - radius, position.y - radius, radius * 2, radius * 2);
+      });
+    }
+  }
+  return new CommercialDensityOverlay();
 }
 
 async function renderCommercialDensity() {
@@ -522,7 +560,7 @@ async function renderCommercialDensity() {
 
     const map = await ensureMap();
     clearCommercialDensity();
-    state.commercialDensityOverlay = createCommercialDensityOverlay(cells, state.commercialDensitySnapshot.area.bounds);
+    state.commercialDensityOverlay = createCommercialDensityOverlay(cells);
     state.commercialDensityOverlay.setMap(map);
   } catch (error) {
     console.warn("Commercial density overlay unavailable.", error);
