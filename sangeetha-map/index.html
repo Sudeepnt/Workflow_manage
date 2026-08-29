@@ -58,17 +58,6 @@
         <i class="location-icon" data-lucide="locate-fixed" aria-hidden="true"></i>
       </button>
 
-      <section class="traffic-card" id="traffic-card" aria-live="polite" hidden>
-        <button class="traffic-card-close" id="traffic-card-close" type="button" aria-label="Close traffic snapshot">
-          <i class="control-icon" data-lucide="x" aria-hidden="true"></i>
-        </button>
-        <p class="traffic-card-kicker">Bengaluru roads</p>
-        <h2 class="traffic-card-title" id="traffic-card-title">Loading traffic snapshot…</h2>
-        <p class="traffic-card-summary" id="traffic-card-summary"></p>
-        <ol class="traffic-road-list" id="traffic-road-list"></ol>
-        <p class="traffic-card-note">Fixed snapshot — it will not update automatically.</p>
-      </section>
-
       <div class="map-modebar" aria-label="Store management tools">
         <button class="mode-button add-store-mode" id="add-store-button" type="button">
           <i class="mode-icon" data-lucide="plus" aria-hidden="true"></i>
@@ -78,8 +67,8 @@
           <i class="mode-icon" data-lucide="scan" aria-hidden="true"></i>
           <span>Select Area</span>
         </button>
-        <button class="mode-button traffic-mode" id="traffic-button" type="button" aria-label="Show Bengaluru traffic snapshot" title="Show Bengaluru traffic snapshot">
-          <i class="mode-icon" data-lucide="gauge" aria-hidden="true"></i>
+        <button class="mode-button traffic-toggle" id="traffic-toggle" type="button" aria-label="Hide traffic overlay" title="Hide traffic overlay">
+          <i class="mode-icon" data-lucide="eye" aria-hidden="true"></i>
           <span>Traffic</span>
         </button>
         <button class="mode-button area-boundary-rename" id="area-rename-button" type="button" aria-label="Rename selected boundary" title="Rename boundary" hidden>

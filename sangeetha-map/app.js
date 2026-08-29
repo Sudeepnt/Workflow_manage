@@ -49,6 +49,7 @@ const state = {
   stores: [],
   trafficPolylines: [],
   trafficSnapshot: null,
+  trafficVisible: true,
 };
 
 const INDIA_BOUNDS = {
@@ -149,12 +150,7 @@ const el = {
   statusDetail: document.getElementById("status-detail"),
   statusLabel: document.getElementById("status-label"),
   topSearchButton: document.getElementById("top-search-button"),
-  trafficButton: document.getElementById("traffic-button"),
-  trafficCard: document.getElementById("traffic-card"),
-  trafficCardClose: document.getElementById("traffic-card-close"),
-  trafficRoadList: document.getElementById("traffic-road-list"),
-  trafficCardSummary: document.getElementById("traffic-card-summary"),
-  trafficCardTitle: document.getElementById("traffic-card-title"),
+  trafficToggle: document.getElementById("traffic-toggle"),
   storeSearchInput: document.getElementById("store-search-input"),
   storeSearchResults: document.getElementById("store-search-results"),
   storeSheet: document.getElementById("store-sheet"),
@@ -299,10 +295,12 @@ function setAreaModeUi(active) {
   el.areaRenameButton.hidden = !(active && state.areaDraftId);
   el.areaDeleteButton.hidden = !(active && state.areaDraftId);
   el.savedAreasToggle.hidden = active;
+  el.trafficToggle.hidden = active;
   el.addStoreButton.disabled = active;
   el.areaRenameButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.areaDeleteButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
+  el.trafficToggle.disabled = active;
   el.locationButton.disabled = active;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
@@ -322,6 +320,19 @@ function updateSavedAreasToggle() {
     <span>${label}</span>
   `;
   renderIconSet(el.savedAreasToggle);
+}
+
+function updateTrafficToggle() {
+  const iconName = state.trafficVisible ? "eye" : "eye-off";
+  const label = state.trafficVisible ? "Traffic" : "Hidden";
+  el.trafficToggle.setAttribute("aria-label", state.trafficVisible ? "Hide traffic overlay" : "Show traffic overlay");
+  el.trafficToggle.title = state.trafficVisible ? "Hide traffic overlay" : "Show traffic overlay";
+  el.trafficToggle.classList.toggle("is-muted", !state.trafficVisible);
+  el.trafficToggle.innerHTML = `
+    <i class="mode-icon" data-lucide="${iconName}" aria-hidden="true"></i>
+    <span>${label}</span>
+  `;
+  renderIconSet(el.trafficToggle);
 }
 
 function setSheetFeedback(message, isError = false) {
@@ -387,57 +398,33 @@ function drawTrafficCorridor(map, corridor, bounds) {
   path.forEach((point) => bounds.extend(point));
 }
 
-function renderTrafficRoadList(corridors) {
-  const ranked = [...corridors]
-    .map((corridor) => ({
-      ...corridor,
-      delayMinutes: Math.max(0, durationMinutes(corridor.duration) - durationMinutes(corridor.staticDuration)),
-    }))
-    .sort((a, b) => b.delayMinutes - a.delayMinutes);
-  el.trafficRoadList.innerHTML = ranked.slice(0, 5).map((corridor) => `
-    <li class="traffic-road-item">
-      <span>${corridor.name}</span>
-      <strong>+${corridor.delayMinutes} min</strong>
-    </li>
-  `).join("");
-}
-
-async function showBengaluruTraffic() {
+async function renderBengaluruTraffic({ fitView = false } = {}) {
   try {
-    el.trafficButton.disabled = true;
-    el.trafficCard.hidden = false;
-    el.trafficCardTitle.textContent = "Loading fixed snapshot…";
-    el.trafficCardSummary.textContent = "";
-
+    if (!state.trafficVisible) return;
     if (!state.trafficSnapshot) {
       state.trafficSnapshot = await fetchJson("/api/bengaluru-traffic-snapshot");
     }
     const corridors = state.trafficSnapshot.corridors || [];
     if (!corridors.length) throw new Error("Bengaluru traffic snapshot is unavailable.");
 
-    const highTrafficCount = corridors.filter((corridor) => (
-      durationMinutes(corridor.duration) - durationMinutes(corridor.staticDuration) >= 12
-    )).length;
-    el.trafficCardTitle.textContent = "Bengaluru traffic snapshot";
-    el.trafficCardSummary.textContent = `${highTrafficCount} high-traffic corridors in this fixed capture`;
-    renderTrafficRoadList(corridors);
-
     const map = await ensureMap();
     clearTrafficRoute();
     const bounds = new google.maps.LatLngBounds();
     corridors.forEach((corridor) => drawTrafficCorridor(map, corridor, bounds));
-    map.fitBounds(bounds, 72);
+    if (fitView) map.fitBounds(bounds, 72);
   } catch (error) {
-    el.trafficCard.hidden = true;
-    showToast("Traffic snapshot unavailable", error.message, 7000);
-  } finally {
-    el.trafficButton.disabled = false;
+    console.warn("Traffic snapshot unavailable.", error);
   }
 }
 
-function hideBengaluruTraffic() {
-  el.trafficCard.hidden = true;
-  clearTrafficRoute();
+async function toggleTrafficVisibility() {
+  state.trafficVisible = !state.trafficVisible;
+  updateTrafficToggle();
+  if (state.trafficVisible) {
+    await renderBengaluruTraffic();
+  } else {
+    clearTrafficRoute();
+  }
 }
 
 async function loadRuntimeConfig() {
@@ -2280,8 +2267,6 @@ function bindEvents() {
     setSearchVisibility(el.mapTools.hidden);
   });
   el.locationButton.addEventListener("click", showCurrentLocation);
-  el.trafficButton.addEventListener("click", showBengaluruTraffic);
-  el.trafficCardClose.addEventListener("click", hideBengaluruTraffic);
   el.sheetClose.addEventListener("click", () => showStoreSheet(null));
   el.regionFilter.addEventListener("change", async () => {
     state.selectedRegion = el.regionFilter.value;
@@ -2319,6 +2304,7 @@ function bindEvents() {
     button.addEventListener("click", () => setAddLocationMode(button.dataset.locationMode));
   });
   el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
+  el.trafficToggle.addEventListener("click", toggleTrafficVisibility);
   el.areaRenameButton.addEventListener("click", renameAreaSelection);
   el.areaDeleteButton.addEventListener("click", deleteAreaSelection);
   el.areaButton.addEventListener("click", async () => {
@@ -2364,6 +2350,7 @@ async function init() {
   window.addEventListener("load", () => renderIconSet(), { once: true });
   bindEvents();
   updateSavedAreasToggle();
+  updateTrafficToggle();
   setLoadingState(true);
 
   try {
@@ -2371,6 +2358,7 @@ async function init() {
     await ensureMap();
     setupStoreSearch();
     await loadStores();
+    await renderBengaluruTraffic({ fitView: true });
     await loadAreas().catch((error) => {
       console.warn("Saved areas could not be loaded.", error);
     });
