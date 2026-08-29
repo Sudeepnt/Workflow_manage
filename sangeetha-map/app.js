@@ -555,12 +555,16 @@ async function renderCommercialDensity() {
     if (!state.commercialDensitySnapshot) {
       state.commercialDensitySnapshot = await fetchJson("/api/bengaluru-commercial-density");
     }
-    const cells = groupCommercialDensityPoints(state.commercialDensitySnapshot.points || []);
-    if (!cells.length) throw new Error("Commercial density data is unavailable.");
+    const bounds = state.commercialDensitySnapshot.area?.bounds;
+    if (!bounds) throw new Error("Commercial density bounds are unavailable.");
 
     const map = await ensureMap();
     clearCommercialDensity();
-    state.commercialDensityOverlay = createCommercialDensityOverlay(cells);
+    state.commercialDensityOverlay = new google.maps.GroundOverlay(
+      "/sangeetha-map/assets/central-commercial-heatmap.png",
+      { north: bounds.north, south: bounds.south, east: bounds.east, west: bounds.west },
+      { clickable: false, opacity: 0.92 },
+    );
     state.commercialDensityOverlay.setMap(map);
   } catch (error) {
     console.warn("Commercial density overlay unavailable.", error);
