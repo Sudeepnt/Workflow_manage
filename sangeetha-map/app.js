@@ -50,6 +50,9 @@ const state = {
   trafficPolylines: [],
   trafficSnapshot: null,
   trafficVisible: true,
+  commercialDensityCircles: [],
+  commercialDensitySnapshot: null,
+  commercialDensityVisible: true,
 };
 
 const INDIA_BOUNDS = {
@@ -99,6 +102,7 @@ const el = {
   areaRenameButton: document.getElementById("area-rename-button"),
   areaSummary: document.getElementById("area-summary"),
   citySearchHost: document.getElementById("city-search-host"),
+  commercialDensityToggle: document.getElementById("commercial-density-toggle"),
   cancelStoreEditButton: document.getElementById("cancel-store-edit-button"),
   deleteStoreButton: document.getElementById("delete-store-button"),
   deleteCancelButton: document.getElementById("delete-cancel-button"),
@@ -296,11 +300,13 @@ function setAreaModeUi(active) {
   el.areaDeleteButton.hidden = !(active && state.areaDraftId);
   el.savedAreasToggle.hidden = active;
   el.trafficToggle.hidden = active;
+  el.commercialDensityToggle.hidden = active;
   el.addStoreButton.disabled = active;
   el.areaRenameButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.areaDeleteButton.disabled = state.areaSaveInFlight || state.areaPromptOpen;
   el.savedAreasToggle.disabled = active && state.areaSaveInFlight;
   el.trafficToggle.disabled = active;
+  el.commercialDensityToggle.disabled = active;
   el.locationButton.disabled = active;
   el.regionFilter.disabled = active || state.loading;
   el.storeSearchInput.disabled = active;
@@ -333,6 +339,19 @@ function updateTrafficToggle() {
     <span>${label}</span>
   `;
   renderIconSet(el.trafficToggle);
+}
+
+function updateCommercialDensityToggle() {
+  const iconName = state.commercialDensityVisible ? "eye" : "eye-off";
+  const label = state.commercialDensityVisible ? "Commercial" : "Hidden";
+  el.commercialDensityToggle.setAttribute("aria-label", state.commercialDensityVisible ? "Hide commercial density overlay" : "Show commercial density overlay");
+  el.commercialDensityToggle.title = state.commercialDensityVisible ? "Hide commercial density overlay" : "Show commercial density overlay";
+  el.commercialDensityToggle.classList.toggle("is-muted", !state.commercialDensityVisible);
+  el.commercialDensityToggle.innerHTML = `
+    <i class="mode-icon" data-lucide="${iconName}" aria-hidden="true"></i>
+    <span>${label}</span>
+  `;
+  renderIconSet(el.commercialDensityToggle);
 }
 
 function setSheetFeedback(message, isError = false) {
@@ -424,6 +443,87 @@ async function toggleTrafficVisibility() {
     await renderBengaluruTraffic();
   } else {
     clearTrafficRoute();
+  }
+}
+
+function clearCommercialDensity() {
+  state.commercialDensityCircles.forEach((circle) => circle.setMap(null));
+  state.commercialDensityCircles = [];
+}
+
+function blendHexColor(from, to, amount) {
+  const start = from.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  const end = to.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  const value = start.map((channel, index) => Math.round(channel + ((end[index] - channel) * amount)));
+  return `#${value.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function getDensityColor(value) {
+  const stops = ["#1eb85b", "#b6d83b", "#ffd34e", "#ff8426", "#e84321", "#7b1010"];
+  const scaled = Math.max(0, Math.min(1, value)) * (stops.length - 1);
+  const index = Math.min(Math.floor(scaled), stops.length - 2);
+  return blendHexColor(stops[index], stops[index + 1], scaled - index);
+}
+
+function groupCommercialDensityPoints(points) {
+  const cellSize = 0.0022;
+  const cells = new Map();
+  points.forEach((point) => {
+    const lat = Number(point.lat);
+    const lng = Number(point.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const key = `${Math.floor(lat / cellSize)}:${Math.floor(lng / cellSize)}`;
+    const cell = cells.get(key) || { lat: 0, lng: 0, weight: 0, count: 0 };
+    cell.lat += lat;
+    cell.lng += lng;
+    cell.weight += Number(point.weight) || 0.7;
+    cell.count += 1;
+    cells.set(key, cell);
+  });
+  return [...cells.values()].map((cell) => ({
+    lat: cell.lat / cell.count,
+    lng: cell.lng / cell.count,
+    weight: cell.weight,
+  }));
+}
+
+async function renderCommercialDensity() {
+  try {
+    if (!state.commercialDensityVisible) return;
+    if (!state.commercialDensitySnapshot) {
+      state.commercialDensitySnapshot = await fetchJson("/api/bengaluru-commercial-density");
+    }
+    const cells = groupCommercialDensityPoints(state.commercialDensitySnapshot.points || []);
+    if (!cells.length) throw new Error("Commercial density data is unavailable.");
+
+    const maxWeight = Math.max(...cells.map((cell) => cell.weight));
+    const map = await ensureMap();
+    clearCommercialDensity();
+    cells.forEach((cell) => {
+      const intensity = Math.pow(cell.weight / maxWeight, 0.62);
+      state.commercialDensityCircles.push(new google.maps.Circle({
+        map,
+        center: { lat: cell.lat, lng: cell.lng },
+        radius: 210 + (intensity * 380),
+        strokeOpacity: 0,
+        fillColor: getDensityColor(intensity),
+        fillOpacity: 0.14 + (intensity * 0.5),
+        clickable: false,
+        zIndex: 12,
+      }));
+    });
+  } catch (error) {
+    console.warn("Commercial density overlay unavailable.", error);
+  }
+}
+
+async function toggleCommercialDensityVisibility() {
+  state.commercialDensityVisible = !state.commercialDensityVisible;
+  updateCommercialDensityToggle();
+  if (state.commercialDensityVisible) {
+    await renderCommercialDensity();
+  } else {
+    clearCommercialDensity();
   }
 }
 
@@ -2305,6 +2405,7 @@ function bindEvents() {
   });
   el.savedAreasToggle.addEventListener("click", toggleSavedAreasVisibility);
   el.trafficToggle.addEventListener("click", toggleTrafficVisibility);
+  el.commercialDensityToggle.addEventListener("click", toggleCommercialDensityVisibility);
   el.areaRenameButton.addEventListener("click", renameAreaSelection);
   el.areaDeleteButton.addEventListener("click", deleteAreaSelection);
   el.areaButton.addEventListener("click", async () => {
@@ -2351,6 +2452,7 @@ async function init() {
   bindEvents();
   updateSavedAreasToggle();
   updateTrafficToggle();
+  updateCommercialDensityToggle();
   setLoadingState(true);
 
   try {
@@ -2359,6 +2461,7 @@ async function init() {
     setupStoreSearch();
     await loadStores();
     await renderBengaluruTraffic({ fitView: true });
+    await renderCommercialDensity();
     await loadAreas().catch((error) => {
       console.warn("Saved areas could not be loaded.", error);
     });

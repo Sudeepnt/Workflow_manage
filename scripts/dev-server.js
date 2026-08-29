@@ -8,6 +8,7 @@ const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORT) || 8000;
 const catalogData = require("../data/sangeetha-store-catalog.json");
 const trafficSnapshot = require("../data/bengaluru-traffic-weekly-snapshot.json");
+const commercialDensitySnapshot = require("../data/central-bengaluru-commercial-density.json");
 let localStores = catalogData.stores.map((store, index) => ({
   id: index + 1,
   store_number: index + 1,
@@ -106,6 +107,11 @@ const server = http.createServer((request, response) => {
 
   if (request.method === "GET" && url.pathname === "/api/bengaluru-traffic-snapshot") {
     sendJson(response, 200, trafficSnapshot);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/bengaluru-commercial-density") {
+    sendJson(response, 200, commercialDensitySnapshot);
     return;
   }
 
