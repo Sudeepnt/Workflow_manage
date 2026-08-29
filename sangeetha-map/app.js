@@ -503,7 +503,7 @@ function createCommercialDensityOverlay(cells) {
     }
 
     onAdd() {
-      this.getPanes().overlayLayer.appendChild(this.canvas);
+      this.getPanes().floatPane.appendChild(this.canvas);
     }
 
     onRemove() {
