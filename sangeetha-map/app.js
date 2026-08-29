@@ -537,15 +537,15 @@ function createCommercialDensityOverlay(cells) {
       density.clearRect(0, 0, width, height);
       density.globalCompositeOperation = "lighter";
       const maxWeight = Math.max(...cells.map((cell) => cell.weight));
-      const radius = Math.max(48, Math.min(104, 38 + (map.getZoom() * 4.8)));
+      const radius = Math.max(34, Math.min(72, 17 + (map.getZoom() * 3.05)));
 
       cells.forEach((cell) => {
         const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(cell.lat, cell.lng));
         if (!position || position.x < -radius || position.x > width + radius || position.y < -radius || position.y > height + radius) return;
-        const strength = 0.07 + (Math.pow(cell.weight / maxWeight, 0.72) * 0.24);
+        const strength = 0.012 + (Math.pow(cell.weight / maxWeight, 1.15) * 0.1);
         const gradient = density.createRadialGradient(position.x, position.y, 0, position.x, position.y, radius);
         gradient.addColorStop(0, `rgba(0, 0, 0, ${strength})`);
-        gradient.addColorStop(0.36, `rgba(0, 0, 0, ${strength * 0.7})`);
+        gradient.addColorStop(0.42, `rgba(0, 0, 0, ${strength * 0.52})`);
         gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
         density.fillStyle = gradient;
         density.fillRect(position.x - radius, position.y - radius, radius * 2, radius * 2);
@@ -561,12 +561,12 @@ function createCommercialDensityOverlay(cells) {
 
       for (let index = 0; index < source.data.length; index += 4) {
         const intensity = source.data[index + 3] / peak;
-        if (intensity < 0.045) continue;
-        const [red, green, blue] = getDensityRgb(Math.pow(intensity, 0.68));
+        if (intensity < 0.075) continue;
+        const [red, green, blue] = getDensityRgb(Math.pow(intensity, 2.15));
         source.data[index] = red;
         source.data[index + 1] = green;
         source.data[index + 2] = blue;
-        source.data[index + 3] = Math.round(Math.min(0.64, 0.16 + (intensity * 0.52)) * 255);
+        source.data[index + 3] = Math.round(Math.min(0.52, 0.04 + (Math.pow(intensity, 1.7) * 0.48)) * 255);
       }
       output.putImageData(source, 0, 0);
     }
