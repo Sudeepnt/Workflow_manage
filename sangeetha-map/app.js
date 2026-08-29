@@ -451,24 +451,6 @@ function clearCommercialDensity() {
   state.commercialDensityOverlay = null;
 }
 
-function blendHexColor(from, to, amount) {
-  const start = from.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
-  const end = to.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
-  const value = start.map((channel, index) => Math.round(channel + ((end[index] - channel) * amount)));
-  return `#${value.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
-}
-
-function getDensityColor(value) {
-  const stops = ["#1eb85b", "#b6d83b", "#ffd34e", "#ff8426", "#e84321", "#7b1010"];
-  const scaled = Math.max(0, Math.min(1, value)) * (stops.length - 1);
-  const index = Math.min(Math.floor(scaled), stops.length - 2);
-  return blendHexColor(stops[index], stops[index + 1], scaled - index);
-}
-
-function getDensityRgb(value) {
-  return getDensityColor(value).match(/[a-f\d]{2}/gi).map((channel) => Number.parseInt(channel, 16));
-}
-
 function groupCommercialDensityPoints(points) {
   const cellSize = 0.0022;
   const cells = new Map();
@@ -491,93 +473,6 @@ function groupCommercialDensityPoints(points) {
   }));
 }
 
-function createCommercialDensityOverlay(cells) {
-  class CommercialDensityOverlay extends google.maps.OverlayView {
-    constructor() {
-      super();
-      this.canvas = document.createElement("canvas");
-      this.densityCanvas = document.createElement("canvas");
-      this.canvas.className = "commercial-density-heatmap";
-      this.canvas.style.pointerEvents = "none";
-      this.canvas.style.position = "absolute";
-      this.canvas.style.top = "0";
-      this.canvas.style.left = "0";
-    }
-
-    onAdd() {
-      this.getPanes().overlayLayer.appendChild(this.canvas);
-    }
-
-    onRemove() {
-      this.canvas.remove();
-    }
-
-    draw() {
-      const projection = this.getProjection();
-      const map = this.getMap();
-      const mapDiv = map?.getDiv();
-      if (!projection || !mapDiv) return;
-
-      const width = mapDiv.clientWidth;
-      const height = mapDiv.clientHeight;
-      if (!width || !height) return;
-      const pixelRatio = window.devicePixelRatio || 1;
-      const scaledWidth = Math.round(width * pixelRatio);
-      const scaledHeight = Math.round(height * pixelRatio);
-      const canvases = [this.canvas, this.densityCanvas];
-      canvases.forEach((canvas) => {
-        canvas.width = scaledWidth;
-        canvas.height = scaledHeight;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-      });
-
-      const density = this.densityCanvas.getContext("2d", { willReadFrequently: true });
-      density.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      density.clearRect(0, 0, width, height);
-      density.globalCompositeOperation = "lighter";
-      const maxWeight = Math.max(...cells.map((cell) => cell.weight));
-      const radius = Math.max(34, Math.min(72, 17 + (map.getZoom() * 3.05)));
-
-      cells.forEach((cell) => {
-        const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(cell.lat, cell.lng));
-        if (!position || position.x < -radius || position.x > width + radius || position.y < -radius || position.y > height + radius) return;
-        const strength = 0.012 + (Math.pow(cell.weight / maxWeight, 1.15) * 0.1);
-        const gradient = density.createRadialGradient(position.x, position.y, 0, position.x, position.y, radius);
-        gradient.addColorStop(0, `rgba(0, 0, 0, ${strength})`);
-        gradient.addColorStop(0.42, `rgba(0, 0, 0, ${strength * 0.52})`);
-        gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-        density.fillStyle = gradient;
-        density.fillRect(position.x - radius, position.y - radius, radius * 2, radius * 2);
-      });
-
-      const source = density.getImageData(0, 0, scaledWidth, scaledHeight);
-      let peak = 0;
-      for (let index = 3; index < source.data.length; index += 4) peak = Math.max(peak, source.data[index]);
-      const output = this.canvas.getContext("2d", { willReadFrequently: true });
-      output.setTransform(1, 0, 0, 1, 0, 0);
-      output.clearRect(0, 0, scaledWidth, scaledHeight);
-      if (!peak) return;
-
-      for (let index = 0; index < source.data.length; index += 4) {
-        const intensity = source.data[index + 3] / peak;
-        if (intensity < 0.075) {
-          source.data[index + 3] = 0;
-          continue;
-        }
-        const [red, green, blue] = getDensityRgb(Math.pow(intensity, 2.15));
-        source.data[index] = red;
-        source.data[index + 1] = green;
-        source.data[index + 2] = blue;
-        source.data[index + 3] = Math.round(Math.min(0.52, 0.04 + (Math.pow(intensity, 1.7) * 0.48)) * 255);
-      }
-      output.putImageData(source, 0, 0);
-    }
-  }
-
-  return new CommercialDensityOverlay();
-}
-
 async function renderCommercialDensity() {
   try {
     if (!state.commercialDensityVisible) return;
@@ -589,7 +484,17 @@ async function renderCommercialDensity() {
 
     const map = await ensureMap();
     clearCommercialDensity();
-    state.commercialDensityOverlay = createCommercialDensityOverlay(cells);
+    const maxWeight = Math.max(...cells.map((cell) => cell.weight));
+    state.commercialDensityOverlay = new google.maps.visualization.HeatmapLayer({
+      data: cells.map((cell) => ({
+        location: new google.maps.LatLng(cell.lat, cell.lng),
+        weight: 0.08 + (Math.pow(cell.weight / maxWeight, 1.4) * 0.92),
+      })),
+      dissipating: true,
+      radius: 58,
+      opacity: 0.66,
+      gradient: ["rgba(0, 0, 0, 0)", "#20c85b", "#a9d63e", "#f7e34b", "#ffad2e", "#f45a2c", "#d92d20", "#7b1010"],
+    });
     state.commercialDensityOverlay.setMap(map);
   } catch (error) {
     console.warn("Commercial density overlay unavailable.", error);
@@ -628,7 +533,7 @@ function loadMapsScript() {
       resolve();
     };
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker,places,geometry`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker,places,geometry,visualization`;
     script.async = true;
     script.defer = true;
     script.onerror = () => {
