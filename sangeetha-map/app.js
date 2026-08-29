@@ -561,7 +561,10 @@ function createCommercialDensityOverlay(cells) {
 
       for (let index = 0; index < source.data.length; index += 4) {
         const intensity = source.data[index + 3] / peak;
-        if (intensity < 0.075) continue;
+        if (intensity < 0.075) {
+          source.data[index + 3] = 0;
+          continue;
+        }
         const [red, green, blue] = getDensityRgb(Math.pow(intensity, 2.15));
         source.data[index] = red;
         source.data[index + 1] = green;
