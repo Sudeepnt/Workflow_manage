@@ -473,6 +473,81 @@ function groupCommercialDensityPoints(points) {
   }));
 }
 
+function blendDensityColor(from, to, amount) {
+  const start = from.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  const end = to.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  return `#${start.map((channel, index) => Math.round(channel + ((end[index] - channel) * amount)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function getCommercialHeatColor(intensity) {
+  const colors = ["#1fcb61", "#b4df42", "#ffe24d", "#ff9f28", "#ef4628", "#7c1010"];
+  const scaled = Math.max(0, Math.min(1, intensity)) * (colors.length - 1);
+  const index = Math.min(Math.floor(scaled), colors.length - 2);
+  return blendDensityColor(colors[index], colors[index + 1], scaled - index);
+}
+
+function asRgba(hex, alpha) {
+  const [red, green, blue] = hex.match(/[a-f\d]{2}/gi).map((value) => Number.parseInt(value, 16));
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function createCommercialDensityOverlay(cells) {
+  class CommercialDensityOverlay extends google.maps.OverlayView {
+    constructor() {
+      super();
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.position = "absolute";
+      this.canvas.style.top = "0";
+      this.canvas.style.left = "0";
+      this.canvas.style.pointerEvents = "none";
+    }
+
+    onAdd() {
+      this.getPanes().overlayLayer.appendChild(this.canvas);
+    }
+
+    onRemove() {
+      this.canvas.remove();
+    }
+
+    draw() {
+      const map = this.getMap();
+      const projection = this.getProjection();
+      const mapDiv = map?.getDiv();
+      if (!map || !projection || !mapDiv) return;
+      const width = mapDiv.clientWidth;
+      const height = mapDiv.clientHeight;
+      if (!width || !height) return;
+      this.canvas.width = width;
+      this.canvas.height = height;
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+      const context = this.canvas.getContext("2d");
+      context.clearRect(0, 0, width, height);
+
+      const weights = cells.map((cell) => cell.weight).sort((a, b) => a - b);
+      const floor = weights[Math.floor(weights.length * 0.36)] || 0;
+      const peak = weights[weights.length - 1] || 1;
+      const radius = Math.max(42, Math.min(78, 18 + (map.getZoom() * 3.45)));
+      [...cells].sort((a, b) => a.weight - b.weight).forEach((cell) => {
+        const intensity = Math.max(0, Math.min(1, (cell.weight - floor) / Math.max(1, peak - floor)));
+        if (intensity < 0.035) return;
+        const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(cell.lat, cell.lng));
+        if (!position || position.x < -radius || position.x > width + radius || position.y < -radius || position.y > height + radius) return;
+        const color = getCommercialHeatColor(Math.pow(intensity, 0.9));
+        const gradient = context.createRadialGradient(position.x, position.y, 0, position.x, position.y, radius);
+        gradient.addColorStop(0, asRgba(color, 0.1 + (intensity * 0.22)));
+        gradient.addColorStop(0.28, asRgba(color, 0.07 + (intensity * 0.15)));
+        gradient.addColorStop(0.62, asRgba(color, 0.025 + (intensity * 0.04)));
+        gradient.addColorStop(1, asRgba(color, 0));
+        context.fillStyle = gradient;
+        context.fillRect(position.x - radius, position.y - radius, radius * 2, radius * 2);
+      });
+    }
+  }
+  return new CommercialDensityOverlay();
+}
+
 async function renderCommercialDensity() {
   try {
     if (!state.commercialDensityVisible) return;
@@ -484,17 +559,7 @@ async function renderCommercialDensity() {
 
     const map = await ensureMap();
     clearCommercialDensity();
-    const maxWeight = Math.max(...cells.map((cell) => cell.weight));
-    state.commercialDensityOverlay = new google.maps.visualization.HeatmapLayer({
-      data: cells.map((cell) => ({
-        location: new google.maps.LatLng(cell.lat, cell.lng),
-        weight: 0.08 + (Math.pow(cell.weight / maxWeight, 1.4) * 0.92),
-      })),
-      dissipating: true,
-      radius: 58,
-      opacity: 0.66,
-      gradient: ["rgba(0, 0, 0, 0)", "#20c85b", "#a9d63e", "#f7e34b", "#ffad2e", "#f45a2c", "#d92d20", "#7b1010"],
-    });
+    state.commercialDensityOverlay = createCommercialDensityOverlay(cells);
     state.commercialDensityOverlay.setMap(map);
   } catch (error) {
     console.warn("Commercial density overlay unavailable.", error);
@@ -533,7 +598,7 @@ function loadMapsScript() {
       resolve();
     };
 
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker,places,geometry,visualization`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(state.config.googleMapsApiKey)}&loading=async&callback=${callbackName}&v=weekly&libraries=marker,places,geometry`;
     script.async = true;
     script.defer = true;
     script.onerror = () => {
